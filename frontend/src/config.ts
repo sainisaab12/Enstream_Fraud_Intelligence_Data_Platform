@@ -9,8 +9,13 @@ export const getBackendUrl = () => {
     if (host.includes(".loca.lt")) {
       return "";
     }
-    if (host.includes(".onrender.com") && host.includes("-frontend")) {
-      return "https://" + host.replace("-frontend", "-backend");
+    if (host.includes(".onrender.com")) {
+      if (host.includes("enstream-frontend")) {
+        return "https://" + host.replace("enstream-frontend", "enstream-backend");
+      }
+      if (host.includes("-frontend")) {
+        return "https://" + host.replace("-frontend", "-backend");
+      }
     }
   }
 

@@ -1,7 +1,8 @@
 ﻿import React, { useState, useEffect } from "react";
 import { 
   Activity, Database, Cpu, 
-  Smartphone, BarChart2, Search, AlertCircle, Code, GitMerge, Shuffle
+  Smartphone, BarChart2, Search, AlertCircle, Code, GitMerge, Shuffle,
+  Menu, X
 } from "lucide-react";
 
 // Components
@@ -22,6 +23,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<
     "executive" | "operations" | "data" | "medallion_architecture" | "dq" | "ml" | "investigation" | "realtime" | "architecture" | "data_exchange"
   >("executive");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [stateData, setStateData] = useState<any>(null);
   const [eventLogs, setEventLogs] = useState<any[]>([]);
@@ -199,24 +201,42 @@ export default function App() {
   return (
     <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
       
+      {/* Mobile Backdrop Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
       {/* LEFT SIDEBAR NAVIGATION */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0">
+      <aside className={`fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between shrink-0 z-50 transform transition-transform duration-300 md:static md:translate-x-0 ${
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      }`}>
         <div>
           {/* Logo Brand Header */}
-          <div className="p-6 border-b border-slate-800 flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-slate-100 font-extrabold shadow-lg shadow-blue-500/20">
-              ES
+          <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center space-x-3 font-sans">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-slate-100 font-extrabold shadow-lg shadow-blue-500/20">
+                ES
+              </div>
+              <div>
+                <h1 className="font-extrabold text-sm tracking-wider uppercase text-slate-200">EnStream</h1>
+                <span className="text-[10px] text-blue-500 font-mono tracking-widest uppercase">Fraud Intelligence</span>
+              </div>
             </div>
-            <div>
-              <h1 className="font-extrabold text-sm tracking-wider uppercase text-slate-200">EnStream</h1>
-              <span className="text-[10px] text-blue-500 font-mono tracking-widest uppercase">Fraud Intelligence</span>
-            </div>
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="md:hidden text-slate-400 hover:text-slate-200"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Nav Links */}
           <nav className="p-4 space-y-1">
             <button 
-              onClick={() => setActiveTab("executive")}
+              onClick={() => { setActiveTab("executive"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "executive" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -224,7 +244,7 @@ export default function App() {
               <BarChart2 className="w-4 h-4" /> <span>Executive Desk</span>
             </button>
             <button 
-              onClick={() => setActiveTab("operations")}
+              onClick={() => { setActiveTab("operations"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "operations" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -232,7 +252,7 @@ export default function App() {
               <Activity className="w-4 h-4" /> <span>Ops Center</span>
             </button>
             <button 
-              onClick={() => setActiveTab("data_exchange")}
+              onClick={() => { setActiveTab("data_exchange"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "data_exchange" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -240,7 +260,7 @@ export default function App() {
               <Shuffle className="w-4 h-4" /> <span>Exchange Hub</span>
             </button>
             <button 
-              onClick={() => setActiveTab("data")}
+              onClick={() => { setActiveTab("data"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "data" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -248,7 +268,7 @@ export default function App() {
               <Database className="w-4 h-4" /> <span>Data Explorer</span>
             </button>
             <button 
-              onClick={() => setActiveTab("medallion_architecture")}
+              onClick={() => { setActiveTab("medallion_architecture"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "medallion_architecture" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -256,7 +276,7 @@ export default function App() {
               <GitMerge className="w-4 h-4" /> <span>Medallion Spec</span>
             </button>
             <button 
-              onClick={() => setActiveTab("dq")}
+              onClick={() => { setActiveTab("dq"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "dq" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -264,7 +284,7 @@ export default function App() {
               <AlertCircle className="w-4 h-4" /> <span>DQ Monitor</span>
             </button>
             <button 
-              onClick={() => setActiveTab("ml")}
+              onClick={() => { setActiveTab("ml"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "ml" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -272,7 +292,7 @@ export default function App() {
               <Cpu className="w-4 h-4" /> <span>ML Registry</span>
             </button>
             <button 
-              onClick={() => setActiveTab("investigation")}
+              onClick={() => { setActiveTab("investigation"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "investigation" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -280,7 +300,7 @@ export default function App() {
               <Search className="w-4 h-4" /> <span>Query Investigator</span>
             </button>
             <button 
-              onClick={() => setActiveTab("realtime")}
+              onClick={() => { setActiveTab("realtime"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "realtime" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -288,7 +308,7 @@ export default function App() {
               <Smartphone className="w-4 h-4" /> <span>Event Ingress</span>
             </button>
             <button 
-              onClick={() => setActiveTab("architecture")}
+              onClick={() => { setActiveTab("architecture"); setSidebarOpen(false); }}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "architecture" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
               }`}
@@ -317,21 +337,29 @@ export default function App() {
       </aside>
 
       {/* MAIN CONTENT WORKSPACE AREA */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 w-full">
         
         {/* Header toolbar */}
-        <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 shrink-0 z-10">
-          <h2 className="text-xs uppercase font-extrabold text-slate-300 tracking-wider">
-            {activeTab === "executive" && "Operations Center: Executive Control Room"}
-            {activeTab === "operations" && "Operations Center: Event Stream Console"}
-            {activeTab === "data_exchange" && "Data Exchange: Cross-Sector Fraud Clearinghouse"}
-            {activeTab === "data" && "Data Platform: Live Warehouse Explorer"}
-            {activeTab === "medallion_architecture" && "Data Platform: Medallion Spec & Schemas"}
-            {activeTab === "dq" && "Data Quality Framework: SLA Quality Assurances"}
-            {activeTab === "ml" && "ML Platform Console: Model Registry & Drift Metrics"}
-            {activeTab === "investigation" && "Fraud Investigation Console: Entity Lookup"}
-            {activeTab === "realtime" && "Real-Time Event Ingress: Manual Event Bus Sim"}
-          </h2>
+        <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 md:px-6 shrink-0 z-10">
+          <div className="flex items-center space-x-3 min-w-0">
+            <button 
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden text-slate-400 hover:text-slate-200 focus:outline-none animate-fadeIn"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h2 className="text-xs uppercase font-extrabold text-slate-300 tracking-wider truncate">
+              {activeTab === "executive" && "Operations Center: Executive Control Room"}
+              {activeTab === "operations" && "Operations Center: Event Stream Console"}
+              {activeTab === "data_exchange" && "Data Exchange: Cross-Sector Fraud Clearinghouse"}
+              {activeTab === "data" && "Data Platform: Live Warehouse Explorer"}
+              {activeTab === "medallion_architecture" && "Data Platform: Medallion Spec & Schemas"}
+              {activeTab === "dq" && "Data Quality Framework: SLA Quality Assurances"}
+              {activeTab === "ml" && "ML Platform Console: Model Registry & Drift Metrics"}
+              {activeTab === "investigation" && "Fraud Investigation Console: Entity Lookup"}
+              {activeTab === "realtime" && "Real-Time Event Ingress: Manual Event Bus Sim"}
+            </h2>
+          </div>
           
           <div className="text-xs text-slate-500 flex items-center space-x-2 font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

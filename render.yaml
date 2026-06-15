@@ -34,8 +34,8 @@ services:
     # SPA Routing fallback
     routes:
       - type: rewrite
-        src: /*
-        dest: /index.html
+        source: /*
+        destination: /index.html
     # Environment Variables
     envVars:
       # Bind Vite environment variable to backend service's URL dynamically

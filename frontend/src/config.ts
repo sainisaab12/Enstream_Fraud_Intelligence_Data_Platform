@@ -6,7 +6,7 @@ export const getBackendUrl = () => {
   const port = window.location.port;
 
   if (host !== "localhost" && host !== "127.0.0.1") {
-    if (host.includes(".loca.lt")) {
+    if (host.includes(".loca.lt") || host.includes(".lhr.life")) {
       return "";
     }
     if (host.includes(".onrender.com")) {

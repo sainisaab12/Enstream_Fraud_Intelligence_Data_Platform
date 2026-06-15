@@ -207,7 +207,16 @@ export default function DataExchangeConsole() {
   };
 
   const stats = exchangeState?.stats || { total_records: 0, total_submissions: 0, total_lookups: 0, total_corrections: 0 };
-  const participants = exchangeState?.participants || [];
+  const fallbackParticipants = [
+    { participant_id: "TD_BANK", display_name: "TD Bank", sector: "bank" },
+    { participant_id: "BELL_CA", display_name: "Bell", sector: "telco" },
+    { participant_id: "ROGERS_CA", display_name: "Rogers", sector: "telco" },
+    { participant_id: "RBC_BANK", display_name: "RBC Royal Bank", sector: "bank" },
+    { participant_id: "CIBC_BANK", display_name: "CIBC", sector: "bank" }
+  ];
+  const participants = exchangeState?.participants && exchangeState.participants.length > 0
+    ? exchangeState.participants
+    : fallbackParticipants;
   const records = exchangeState?.records || [];
 
   return (

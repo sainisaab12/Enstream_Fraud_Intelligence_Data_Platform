@@ -26,9 +26,8 @@ services:
         sync: false
 
   # 2. Frontend React Vite Static Site (Hosted SPA)
-  - type: web
+  - type: static
     name: enstream-frontend
-    env: static
     buildCommand: cd frontend && npm install && npm run build
     publishPath: frontend/dist
     # SPA Routing fallback

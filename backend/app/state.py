@@ -111,4 +111,247 @@ class AppState:
         # SSE Clients queue
         self.sse_listeners = []
 
+        # --- CROSS-SECTOR BAD ACTOR DATA EXCHANGE MVP STATE ---
+        self.exchange_lookup_count = 142
+        self.exchange_participants = {
+            "TD_BANK": {
+                "participant_id": "TD_BANK",
+                "legal_name": "The Toronto-Dominion Bank",
+                "display_name": "TD Bank",
+                "sector": "bank",
+                "country": "CA",
+                "submission_channel": "bank_sftp",
+                "lookup_enabled": True,
+                "submission_enabled": True,
+                "participant_status": "active",
+                "status_reason": "onboarding_complete",
+                "agreement_signed_ts": time.time() - 86400 * 120,
+                "activated_ts": time.time() - 86400 * 110,
+                "primary_contact_email": "fraud-ops@td.com",
+                "technical_contact_email": "data-eng@td.com"
+            },
+            "BELL_CA": {
+                "participant_id": "BELL_CA",
+                "legal_name": "Bell Canada Mobility",
+                "display_name": "Bell",
+                "sector": "telco",
+                "country": "CA",
+                "submission_channel": "telco_s3",
+                "lookup_enabled": True,
+                "submission_enabled": True,
+                "participant_status": "active",
+                "status_reason": "onboarding_complete",
+                "agreement_signed_ts": time.time() - 86400 * 115,
+                "activated_ts": time.time() - 86400 * 105,
+                "primary_contact_email": "fraud-ops@bell.ca",
+                "technical_contact_email": "data-eng@bell.ca"
+            },
+            "ROGERS_CA": {
+                "participant_id": "ROGERS_CA",
+                "legal_name": "Rogers Communications Inc.",
+                "display_name": "Rogers",
+                "sector": "telco",
+                "country": "CA",
+                "submission_channel": "telco_s3",
+                "lookup_enabled": True,
+                "submission_enabled": True,
+                "participant_status": "active",
+                "status_reason": "onboarding_complete",
+                "agreement_signed_ts": time.time() - 86400 * 110,
+                "activated_ts": time.time() - 86400 * 100,
+                "primary_contact_email": "fraud-ops@rogers.com",
+                "technical_contact_email": "data-eng@rogers.com"
+            },
+            "RBC_BANK": {
+                "participant_id": "RBC_BANK",
+                "legal_name": "Royal Bank of Canada",
+                "display_name": "RBC Royal Bank",
+                "sector": "bank",
+                "country": "CA",
+                "submission_channel": "bank_sftp",
+                "lookup_enabled": True,
+                "submission_enabled": True,
+                "participant_status": "active",
+                "status_reason": "onboarding_complete",
+                "agreement_signed_ts": time.time() - 86400 * 90,
+                "activated_ts": time.time() - 86400 * 85,
+                "primary_contact_email": "fraud-ops@rbc.com",
+                "technical_contact_email": "data-eng@rbc.com"
+            },
+            "CIBC_BANK": {
+                "participant_id": "CIBC_BANK",
+                "legal_name": "Canadian Imperial Bank of Commerce",
+                "display_name": "CIBC",
+                "sector": "bank",
+                "country": "CA",
+                "submission_channel": "bank_sftp",
+                "lookup_enabled": True,
+                "submission_enabled": True,
+                "participant_status": "active",
+                "status_reason": "onboarding_complete",
+                "agreement_signed_ts": time.time() - 86400 * 80,
+                "activated_ts": time.time() - 86400 * 75,
+                "primary_contact_email": "fraud-ops@cibc.com",
+                "technical_contact_email": "data-eng@cibc.com"
+            }
+        }
+
+        self.exchange_records = [
+            {
+                "record_id": "019408a1-3c11-7f89-8d9e-1234567890ab",
+                "file_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a91",
+                "participant_id": "TD_BANK",
+                "msisdn": "+14165550199",
+                "imei": "352099001761481",
+                "pii_name": "John Doe",
+                "pii_email": "johndoe@gmail.com",
+                "pii_address": "123 Main St, Toronto, ON",
+                "pii_ip_address": "192.168.1.50",
+                "fraud_type": "synthetic_id",
+                "fraud_event_ts": time.time() - 86400 * 60,
+                "source": "online_banking_login",
+                "record_status": "active",
+                "dq_status": "passed",
+                "created_ts": time.time() - 86400 * 59,
+                "updated_ts": time.time() - 86400 * 59,
+                "ownership_status": "Owned",
+                "ownership_status_ts": time.time() - 86400 * 59
+            },
+            {
+                "record_id": "019409b2-4d22-8f90-9e9f-2345678901bc",
+                "file_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a92",
+                "participant_id": "ROGERS_CA",
+                "msisdn": "+14165551234",
+                "imei": "356789012345678",
+                "pii_name": "John Smith",
+                "pii_email": "jsmith@rogers.com",
+                "pii_address": "456 Bay St, Toronto, ON",
+                "pii_ip_address": "172.16.5.12",
+                "fraud_type": "first_party_fraud",
+                "fraud_event_ts": time.time() - 86400 * 50,
+                "source": "mno_portal",
+                "record_status": "active",
+                "dq_status": "passed",
+                "created_ts": time.time() - 86400 * 49,
+                "updated_ts": time.time() - 86400 * 49,
+                "ownership_status": "Recycled",
+                "ownership_status_ts": time.time() - 86400 * 49
+            },
+            {
+                "record_id": "01940a03-5e33-9f01-afaf-3456789012cd",
+                "file_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a93",
+                "participant_id": "CIBC_BANK",
+                "msisdn": "+14165551234",
+                "imei": "356789012345678",
+                "pii_name": "John Smith",
+                "pii_email": "jsmith@rogers.com",
+                "pii_address": "456 Bay St, Toronto, ON",
+                "pii_ip_address": "172.16.5.12",
+                "fraud_type": "first_party_fraud",
+                "fraud_event_ts": time.time() - 86400 * 45,
+                "source": "mortgage_application",
+                "record_status": "active",
+                "dq_status": "passed",
+                "created_ts": time.time() - 86400 * 44,
+                "updated_ts": time.time() - 86400 * 44,
+                "ownership_status": "Recycled",
+                "ownership_status_ts": time.time() - 86400 * 44
+            },
+            {
+                "record_id": "01940b14-6f44-af12-bf0f-4567890123de",
+                "file_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a94",
+                "participant_id": "BELL_CA",
+                "msisdn": "+14165559001",
+                "imei": "35991104111222",
+                "pii_name": "Bob Jenkins",
+                "pii_email": "bjenk@hotmail.com",
+                "pii_address": "789 Yonge St, Toronto, ON",
+                "pii_ip_address": "10.0.0.4",
+                "fraud_type": "account_takeover",
+                "fraud_event_ts": time.time() - 86400 * 30,
+                "source": "sim_activation_flow",
+                "record_status": "active",
+                "dq_status": "passed",
+                "created_ts": time.time() - 86400 * 29,
+                "updated_ts": time.time() - 86400 * 29,
+                "ownership_status": "Owned",
+                "ownership_status_ts": time.time() - 86400 * 29
+            }
+        ]
+
+        self.exchange_submissions = [
+            {
+                "file_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a91",
+                "source_name": "td_bank_sftp",
+                "source_type": "bank_sftp",
+                "participant_id": "TD_BANK",
+                "received_ts": time.time() - 86400 * 59,
+                "parse_status": "parsed",
+                "record_count": 1,
+                "quarantine_reason": None,
+                "created_ts": time.time() - 86400 * 59
+            },
+            {
+                "file_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a92",
+                "source_name": "rogers_ca_s3",
+                "source_type": "telco_s3",
+                "participant_id": "ROGERS_CA",
+                "received_ts": time.time() - 86400 * 49,
+                "parse_status": "parsed",
+                "record_count": 1,
+                "quarantine_reason": None,
+                "created_ts": time.time() - 86400 * 49
+            },
+            {
+                "file_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a93",
+                "source_name": "cibc_bank_sftp",
+                "source_type": "bank_sftp",
+                "participant_id": "CIBC_BANK",
+                "received_ts": time.time() - 86400 * 44,
+                "parse_status": "parsed",
+                "record_count": 1,
+                "quarantine_reason": None,
+                "created_ts": time.time() - 86400 * 44
+            },
+            {
+                "file_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a94",
+                "source_name": "bell_ca_s3",
+                "source_type": "telco_s3",
+                "participant_id": "BELL_CA",
+                "received_ts": time.time() - 86400 * 29,
+                "parse_status": "parsed",
+                "record_count": 1,
+                "quarantine_reason": None,
+                "created_ts": time.time() - 86400 * 29
+            }
+        ]
+
+        self.exchange_corrections = [
+            {
+                "correction_id": "019511aa-a123-7a7e-128a-1294819dfbcf",
+                "participant_id": "TD_BANK",
+                "record_id": "019408a1-3c11-7f89-8d9e-1234567890ab",
+                "reason": "data_entry_error",
+                "requested_ts": time.time() - 86400 * 10,
+                "applied_ts": time.time() - 86400 * 10,
+                "change_diff": '{"record_status": {"before": "active", "after": "withdrawn"}}'
+            }
+        ]
+
+        self.exchange_lookups = [
+            {
+                "lookup_id": "01950ff2-df21-711a-11bc-1294a9dcb89f",
+                "participant_id": "RBC_BANK",
+                "request_msisdn": "+14165550199",
+                "phone_number_match": True,
+                "imei_match": True,
+                "request_imei": "352099001761481",
+                "request_as_of_ts": None,
+                "request_ts": time.time() - 3600 * 2,
+                "response_payload": '{"match": true}',
+                "response_ts": time.time() - 3600 * 2 + 0.12,
+                "correlation_id": "0193b3c4-9f12-7a2e-b6e3-b8f0d12c4a91"
+            }
+        ]
+
 state = AppState()

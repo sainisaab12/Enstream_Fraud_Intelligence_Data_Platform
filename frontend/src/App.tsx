@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect } from "react";
 import { 
   Activity, Database, Cpu, 
-  Smartphone, BarChart2, Search, AlertCircle, Code, GitMerge
+  Smartphone, BarChart2, Search, AlertCircle, Code, GitMerge, Shuffle
 } from "lucide-react";
 
 // Components
@@ -14,12 +14,13 @@ import FraudInvestigationConsole from "./components/FraudInvestigationConsole";
 import RealTimeMonitor from "./components/RealTimeMonitor";
 import TechnicalArchitecture from "./components/TechnicalArchitecture";
 import MedallionArchitectureConsole from "./components/MedallionArchitectureConsole";
+import DataExchangeConsole from "./components/DataExchangeConsole";
 
 import { BACKEND_URL } from "./config";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
-    "executive" | "operations" | "data" | "medallion_architecture" | "dq" | "ml" | "investigation" | "realtime" | "architecture"
+    "executive" | "operations" | "data" | "medallion_architecture" | "dq" | "ml" | "investigation" | "realtime" | "architecture" | "data_exchange"
   >("executive");
 
   const [stateData, setStateData] = useState<any>(null);
@@ -231,6 +232,14 @@ export default function App() {
               <Activity className="w-4 h-4" /> <span>Ops Center</span>
             </button>
             <button 
+              onClick={() => setActiveTab("data_exchange")}
+              className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
+                activeTab === "data_exchange" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
+              }`}
+            >
+              <Shuffle className="w-4 h-4" /> <span>Exchange Hub</span>
+            </button>
+            <button 
               onClick={() => setActiveTab("data")}
               className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
                 activeTab === "data" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
@@ -315,6 +324,7 @@ export default function App() {
           <h2 className="text-xs uppercase font-extrabold text-slate-300 tracking-wider">
             {activeTab === "executive" && "Operations Center: Executive Control Room"}
             {activeTab === "operations" && "Operations Center: Event Stream Console"}
+            {activeTab === "data_exchange" && "Data Exchange: Cross-Sector Fraud Clearinghouse"}
             {activeTab === "data" && "Data Platform: Live Warehouse Explorer"}
             {activeTab === "medallion_architecture" && "Data Platform: Medallion Spec & Schemas"}
             {activeTab === "dq" && "Data Quality Framework: SLA Quality Assurances"}
@@ -355,6 +365,9 @@ export default function App() {
           )}
           {activeTab === "medallion_architecture" && (
             <MedallionArchitectureConsole />
+          )}
+          {activeTab === "data_exchange" && (
+            <DataExchangeConsole />
           )}
           {activeTab === "dq" && (
             <DQMonitoringConsole stateData={stateData} />

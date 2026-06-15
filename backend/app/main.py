@@ -51,6 +51,34 @@ class SimulateEventRequest(BaseModel):
 class PromoteRequest(BaseModel):
     version: str
 
+# Cross-Sector Exchange Request Models
+class ExchangeSubmitRequest(BaseModel):
+    participant_id: str
+    msisdn: str
+    imei: str = None
+    pii_name: str = None
+    pii_email: str = None
+    pii_address: str = None
+    pii_ip_address: str = None
+    fraud_type: str
+    source: str
+    fraud_event_ts: float = None
+
+class ExchangeLookupRequest(BaseModel):
+    participant_id: str
+    msisdn: str
+    imei: str = None
+    pii_name: str = None
+    pii_address: str = None
+    pii_email: str = None
+    pii_ip_address: str = None
+
+class ExchangeCorrectRequest(BaseModel):
+    participant_id: str
+    record_id: str
+    reason: str
+    record_status: str
+
 # Helper to send event to SSE clients
 def broadcast_sse(event_type: str, data: Dict[str, Any]):
     message = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
@@ -402,6 +430,321 @@ def sse_event_stream(request: Request):
                 state.sse_listeners.remove(q)
 
     return StreamingResponse(message_generator(), media_type="text/event-stream")
+
+# --- CROSS-SECTOR DATA EXCHANGE ENDPOINTS ---
+import uuid
+import re
+
+@app.get("/api/exchange/state")
+def get_exchange_state():
+    with state.lock:
+        return {
+            "stats": {
+                "total_records": len([x for x in state.exchange_records if x["record_status"] == "active"]),
+                "total_submissions": len(state.exchange_submissions),
+                "total_lookups": state.exchange_lookup_count,
+                "total_corrections": len(state.exchange_corrections)
+            },
+            "participants": list(state.exchange_participants.values()),
+            "records": state.exchange_records
+        }
+
+@app.post("/api/exchange/submit")
+def submit_exchange_record(req: ExchangeSubmitRequest):
+    import time
+    with state.lock:
+        part = state.exchange_participants.get(req.participant_id)
+        if not part or part["participant_status"] != "active" or not part["submission_enabled"]:
+            return {"status": "rejected", "error": "Participant is not active or unauthorized for submission"}
+        
+        # Validation 1: E.164 MSISDN format check (must start with + followed by 10-15 digits)
+        e164_pattern = re.compile(r"^\+\d{10,15}$")
+        if not e164_pattern.match(req.msisdn):
+            # Log as quarantined submission
+            file_uuid = str(uuid.uuid4())
+            state.exchange_submissions.append({
+                "file_id": file_uuid,
+                "source_name": f"{req.participant_id.lower()}_sftp",
+                "source_type": part["submission_channel"],
+                "participant_id": req.participant_id,
+                "received_ts": time.time(),
+                "parse_status": "quarantined",
+                "record_count": 0,
+                "quarantine_reason": "INVALID_PHONE_FORMAT",
+                "created_ts": time.time()
+            })
+            return {
+                "status": "rejected",
+                "error": "MSISDN must follow E.164 phone format (e.g. +14165550199)",
+                "file_id": file_uuid
+            }
+            
+        # Validation 2: Predefined Fraud Taxonomy check
+        allowed_types = ["synthetic_id", "first_party_fraud", "impersonation", "account_takeover", "sim_swap", "account_opening_fraud"]
+        if req.fraud_type not in allowed_types:
+            file_uuid = str(uuid.uuid4())
+            state.exchange_submissions.append({
+                "file_id": file_uuid,
+                "source_name": f"{req.participant_id.lower()}_sftp",
+                "source_type": part["submission_channel"],
+                "participant_id": req.participant_id,
+                "received_ts": time.time(),
+                "parse_status": "quarantined",
+                "record_count": 0,
+                "quarantine_reason": "INVALID_TAXONOMY_CODE",
+                "created_ts": time.time()
+            })
+            return {
+                "status": "rejected",
+                "error": f"Fraud type must match predefined taxonomy: {', '.join(allowed_types)}",
+                "file_id": file_uuid
+            }
+            
+        # Deduplication: check if same active record already exists from same submitter
+        is_duplicate = False
+        for rec in state.exchange_records:
+            if rec["msisdn"] == req.msisdn and rec["fraud_type"] == req.fraud_type and rec["participant_id"] == req.participant_id and rec["record_status"] == "active":
+                is_duplicate = True
+                break
+                
+        if is_duplicate:
+            return {"status": "duplicate", "message": "Record already exists with active status, de-duplicated."}
+            
+        # Success path: build conformed record
+        rec_uuid = str(uuid.uuid4())
+        file_uuid = str(uuid.uuid4())
+        
+        new_record = {
+            "record_id": rec_uuid,
+            "file_id": file_uuid,
+            "participant_id": req.participant_id,
+            "msisdn": req.msisdn,
+            "imei": req.imei,
+            "pii_name": req.pii_name,
+            "pii_email": req.pii_email,
+            "pii_address": req.pii_address,
+            "pii_ip_address": req.pii_ip_address,
+            "fraud_type": req.fraud_type,
+            "fraud_event_ts": req.fraud_event_ts or time.time(),
+            "source": req.source,
+            "record_status": "active",
+            "dq_status": "passed",
+            "created_ts": time.time(),
+            "updated_ts": time.time(),
+            "ownership_status": "Owned",
+            "ownership_status_ts": time.time()
+        }
+        
+        state.exchange_records.append(new_record)
+        
+        # Log successful submission
+        state.exchange_submissions.append({
+            "file_id": file_uuid,
+            "source_name": f"{req.participant_id.lower()}_sftp" if part["submission_channel"] == "bank_sftp" else f"{req.participant_id.lower()}_s3",
+            "source_type": part["submission_channel"],
+            "participant_id": req.participant_id,
+            "received_ts": time.time(),
+            "parse_status": "parsed",
+            "record_count": 1,
+            "quarantine_reason": None,
+            "created_ts": time.time()
+        })
+        
+        return {"status": "accepted", "record": new_record}
+
+@app.post("/api/exchange/lookup")
+def lookup_exchange_record(req: ExchangeLookupRequest):
+    import time
+    with state.lock:
+        part = state.exchange_participants.get(req.participant_id)
+        if not part or part["participant_status"] != "active" or not part["lookup_enabled"]:
+            return Response(status_code=403, content=json.dumps({"error": "Access Denied: Participant is suspended or inactive"}))
+            
+        state.exchange_lookup_count += 1
+        
+        # Search matching active records
+        matches = []
+        for rec in state.exchange_records:
+            if rec["record_status"] != "active":
+                continue
+            
+            msisdn_match = rec["msisdn"] == req.msisdn
+            imei_match = req.imei and rec["imei"] == req.imei
+            
+            if msisdn_match or imei_match:
+                matches.append(rec)
+                
+        phone_match = any(rec["msisdn"] == req.msisdn for rec in matches)
+        imei_match = any(req.imei and rec["imei"] == req.imei for rec in matches)
+        
+        # Simulated MNO APIs: check if MSISDN has been recycled
+        # Recycled check: if the msisdn is recycled, we flag it. E.g. simulated recycled flag if ends in '1234'
+        is_recycled = req.msisdn.endswith("1234") or req.msisdn == "+14165551234"
+        recycle_status = "RECYCLED" if is_recycled else "OWNED"
+        
+        # Assemble matches lists
+        matches_phone = []
+        matches_imei = []
+        institutions = set()
+        sectors = set()
+        latest_ts = 0.0
+        
+        for r in matches:
+            institutions.add(r["participant_id"])
+            p_obj = state.exchange_participants.get(r["participant_id"], {})
+            sectors.add(p_obj.get("sector", "unknown").upper())
+            if r["fraud_event_ts"] > latest_ts:
+                latest_ts = r["fraud_event_ts"]
+                
+            # Calculate PII score
+            identity_avail = bool(r["pii_name"])
+            name_score = 0
+            addr_score = 0
+            if identity_avail and req.pii_name:
+                if req.pii_name.lower() == r["pii_name"].lower():
+                    name_score = 100
+                elif req.pii_name.lower() in r["pii_name"].lower() or r["pii_name"].lower() in req.pii_name.lower():
+                    name_score = 85
+                    
+            if identity_avail and req.pii_address and r["pii_address"]:
+                if req.pii_address.lower() == r["pii_address"].lower():
+                    addr_score = 100
+                elif req.pii_address.lower()[:10] in r["pii_address"].lower() or r["pii_address"].lower()[:10] in req.pii_address.lower():
+                    addr_score = 75
+            
+            # Format output matching slide schema
+            res_item = {
+                "record_id": r["record_id"],
+                "source_sector": p_obj.get("sector", "unknown").upper(),
+                "source_institution": p_obj.get("display_name", r["participant_id"]),
+                "fraud_type": r["fraud_type"].upper(),
+                "fraud_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(r["fraud_event_ts"])),
+                "status": r["record_status"].upper(),
+                "identity_match": {
+                    "identity_data_available": identity_avail,
+                    "first_name": {"provided": req.pii_name or "", "score": name_score},
+                    "last_name": {"provided": "", "score": name_score},
+                    "address": {"provided": req.pii_address or "", "score": addr_score}
+                }
+            }
+            
+            if r["msisdn"] == req.msisdn:
+                matches_phone.append(res_item)
+            else:
+                matches_imei.append(res_item)
+                
+        # Audit Log lookup request
+        corr_id = str(uuid.uuid4())
+        state.exchange_lookups.append({
+            "lookup_id": str(uuid.uuid4()),
+            "participant_id": req.participant_id,
+            "request_msisdn": req.msisdn,
+            "phone_number_match": phone_match,
+            "imei_match": imei_match,
+            "request_imei": req.imei,
+            "request_as_of_ts": None,
+            "request_ts": time.time(),
+            "response_payload": json.dumps({"phone_match": phone_match, "imei_match": imei_match, "matches_count": len(matches)}),
+            "response_ts": time.time() + 0.05,
+            "correlation_id": corr_id
+        })
+        
+        response_payload = {
+            "query": {
+                "lookup_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "phone_number": req.msisdn,
+                "imei": req.imei or "",
+                "input_data": {
+                    "first_name": req.pii_name or "",
+                    "last_name": "",
+                    "address": req.pii_address or ""
+                }
+            },
+            "match_summary": {
+                "phone_number_match": phone_match,
+                "imei_match": imei_match,
+                "match_count": len(matches),
+                "latest_fraud_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(latest_ts)) if latest_ts > 0 else None,
+                "source_institution_count": len(institutions),
+                "source_sector_count": len(sectors)
+            },
+            "phone_number_result": {
+                "match": phone_match,
+                "recycled_status": {
+                    "record_fraud_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(latest_ts)) if latest_ts > 0 else None,
+                    "recycle_check_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "recycle_status": recycle_status
+                },
+                "matches": matches_phone
+            },
+            "imei_result": {
+                "match": imei_match,
+                "matches": matches_imei
+            }
+        }
+        
+        return response_payload
+
+@app.post("/api/exchange/correct")
+def correct_exchange_record(req: ExchangeCorrectRequest):
+    import time
+    with state.lock:
+        # Check authorization
+        part = state.exchange_participants.get(req.participant_id)
+        if not part or part["participant_status"] != "active":
+            return {"status": "error", "message": "Unauthorized participant"}
+            
+        record = None
+        for r in state.exchange_records:
+            if r["record_id"] == req.record_id:
+                record = r
+                break
+                
+        if not record:
+            return {"status": "error", "message": "Record not found"}
+            
+        old_status = record["record_status"]
+        record["record_status"] = req.record_status
+        record["updated_ts"] = time.time()
+        
+        # GDPR/PIPEDA compliance: delete PII data within 30 days (simulate immediate purge)
+        if req.record_status in ["withdrawn", "cleared"]:
+            record["pii_name"] = "<purged>"
+            record["pii_email"] = "<purged>"
+            record["pii_address"] = "<purged>"
+            record["pii_ip_address"] = "<purged>"
+            
+        # Log correction audit trail
+        state.exchange_corrections.append({
+            "correction_id": str(uuid.uuid4()),
+            "participant_id": req.participant_id,
+            "record_id": req.record_id,
+            "reason": req.reason,
+            "requested_ts": time.time(),
+            "applied_ts": time.time(),
+            "change_diff": json.dumps({"record_status": {"before": old_status, "after": req.record_status}})
+        })
+        
+        return {"status": "success", "record": record}
+
+@app.get("/api/exchange/logs")
+def get_exchange_logs():
+    with state.lock:
+        onboarding_logs = []
+        for p in state.exchange_participants.values():
+            onboarding_logs.append({
+                "institution_name": p["display_name"],
+                "sector": p["sector"],
+                "time_of_onboarding": p["activated_ts"],
+                "records_successfully_uploaded": len([x for x in state.exchange_records if x["participant_id"] == p["participant_id"]])
+            })
+            
+        return {
+            "onboarding": onboarding_logs,
+            "submissions": state.exchange_submissions,
+            "corrections": state.exchange_corrections,
+            "lookups": state.exchange_lookups
+        }
 
 # Mount frontend production build files
 from fastapi.staticfiles import StaticFiles

@@ -760,5 +760,9 @@ if os.path.exists(frontend_dist):
     def serve_frontend(catchall: str):
         if catchall.startswith("api/"):
             raise HTTPException(status_code=404, detail="API route not found")
+        # Serve root-level static files from public directory (e.g. images, favicon, icons)
+        file_path = os.path.join(frontend_dist, catchall)
+        if catchall and os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
         return FileResponse(os.path.join(frontend_dist, "index.html"))
 

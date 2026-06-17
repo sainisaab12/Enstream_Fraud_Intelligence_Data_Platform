@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 export default function TechnicalArchitecture() {
-  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws">("trace");
+  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws">("evolution");
   const [selectedCodeSection, setSelectedCodeSection] = useState<string>("dq");
   
   // Trace console states
@@ -26,7 +26,7 @@ export default function TechnicalArchitecture() {
   const [sandboxLoading, setSandboxLoading] = useState<boolean>(false);
   const [sandboxTrace, setSandboxTrace] = useState<string[]>([]);
   const [editableReq, setEditableReq] = useState<string>("");
-  const [evolutionPhase, setEvolutionPhase] = useState<number>(1);
+  const [evolutionPhase, setEvolutionPhase] = useState<number>(5);
 
   // Caching states
   const [cacheMode, setCacheMode] = useState<"hit" | "dirty_bypass" | "miss">("hit");

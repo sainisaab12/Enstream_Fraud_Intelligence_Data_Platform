@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 export default function TechnicalArchitecture() {
-  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "brief" | "topology" | "code" | "schemas" | "aws">("trace");
+  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws">("trace");
   const [selectedCodeSection, setSelectedCodeSection] = useState<string>("dq");
   
   // Trace console states
@@ -26,6 +26,7 @@ export default function TechnicalArchitecture() {
   const [sandboxLoading, setSandboxLoading] = useState<boolean>(false);
   const [sandboxTrace, setSandboxTrace] = useState<string[]>([]);
   const [editableReq, setEditableReq] = useState<string>("");
+  const [evolutionPhase, setEvolutionPhase] = useState<number>(1);
 
   // Caching states
   const [cacheMode, setCacheMode] = useState<"hit" | "dirty_bypass" | "miss">("hit");
@@ -821,6 +822,14 @@ export default function TechnicalArchitecture() {
             Phase Roadmap
           </button>
           <button
+            onClick={() => setActiveSubTab("evolution")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+              activeSubTab === "evolution" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            Architecture Evolution
+          </button>
+          <button
             onClick={() => setActiveSubTab("brief")}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
               activeSubTab === "brief" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
@@ -1078,6 +1087,208 @@ export default function TechnicalArchitecture() {
               ) : (
                 <div className="py-12 text-center text-slate-500 text-xs">Run trace to fetch Iceberg metadata.</div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB: ARCHITECTURE EVOLUTION */}
+      {activeSubTab === "evolution" && (
+        <div className="space-y-6 font-sans">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+              <div>
+                <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
+                  <Cpu className="w-4 h-4 mr-1.5 text-blue-500 animate-pulse" />
+                  Phase-Wise Architectural Evolution & Streaming Simplification
+                </h4>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Observe the step-by-step transition from batch aggregations to serverless stream lookup caches and stateful processing.
+                </p>
+              </div>
+
+              {/* Evolution Phase Selector */}
+              <div className="bg-slate-950 p-1 rounded-lg border border-slate-850 flex space-x-1">
+                <button
+                  onClick={() => setEvolutionPhase(1)}
+                  className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${
+                    evolutionPhase === 1
+                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      : "text-slate-400 border border-transparent hover:text-slate-300"
+                  }`}
+                >
+                  Phase 1-2 (Batch)
+                </button>
+                <button
+                  onClick={() => setEvolutionPhase(3)}
+                  className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${
+                    evolutionPhase === 3
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                      : "text-slate-400 border border-transparent hover:text-slate-300"
+                  }`}
+                >
+                  Phase 3 (Serverless Stream)
+                </button>
+                <button
+                  onClick={() => setEvolutionPhase(4)}
+                  className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${
+                    evolutionPhase === 4
+                      ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                      : "text-slate-400 border border-transparent hover:text-slate-300"
+                  }`}
+                >
+                  Phase 4 (Stateful Stream)
+                </button>
+                <button
+                  onClick={() => setEvolutionPhase(5)}
+                  className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${
+                    evolutionPhase === 5
+                      ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30"
+                      : "text-slate-400 border border-transparent hover:text-slate-300"
+                  }`}
+                >
+                  Phase 5 (Northstar)
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Details & Acceptance Criteria */}
+              <div className="lg:col-span-4 space-y-4">
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3">
+                  <span className="text-[10px] text-blue-400 font-mono font-bold uppercase tracking-wider block">
+                    {evolutionPhase === 1 && "Phase 1 & 2: Batch Baseline"}
+                    {evolutionPhase === 3 && "Phase 3: Interim Real-Time"}
+                    {evolutionPhase === 4 && "Phase 4: Source-Direct Streaming"}
+                    {evolutionPhase === 5 && "Phase 5: Continuous Northstar"}
+                  </span>
+                  
+                  <h5 className="font-bold text-slate-200 text-xs">
+                    {evolutionPhase === 1 && "Incremental Spark Lakehouse Promotions"}
+                    {evolutionPhase === 3 && "Kinesis & AWS Lambda serving 13 APIs"}
+                    {evolutionPhase === 4 && "Apache Flink CEP & RocksDB In-Memory State"}
+                    {evolutionPhase === 5 && "Autonomous Retraining & Bad Actor Data Exchange"}
+                  </h5>
+
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-sans">
+                    {evolutionPhase === 1 && "Legacy MySQL databases extract conformed records daily. Batch Glue Spark promotion tasks write to S3 Bronze Parquet landing, validate schema formatting rules, promote to conformed Silver, and load analytical aggregates into Redshift serverless Gold tables scheduled by MWAA (Airflow)."}
+                    {evolutionPhase === 3 && "CRM triggers publish events to AWS Kinesis Data Streams. AWS Lambda reads shards, updates Amazon DynamoDB Feature Store, and evicts cached entries in ElastiCache Redis. API Gateway and Step Functions serve 13 REST APIs directly from Redis (< 10ms) or falls back to DynamoDB (< 50ms)."}
+                    {evolutionPhase === 4 && "Transition to direct carrier streaming logs. Apache Flink consumes carrier streams, maintains in-memory rolling state windows in RocksDB (checking e.g. sim swaps count >= 3 within 2 hours, graph networks) in under 10ms. Flink updates DynamoDB feature store and Redis point cache."}
+                    {evolutionPhase === 5 && "Model registries monitor PSI inputs continuously. If PSI > 0.2, automated retraining triggers. Exposes the Bad Actor Data Exchange Hub, consolidating inter-carrier blacklists with role-based access privacy PII masking."}
+                  </p>
+
+                  <div className="border-t border-slate-800 pt-3 space-y-2">
+                    <span className="text-[9px] uppercase font-bold text-slate-400 block font-mono">Key Technologies:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {evolutionPhase === 1 && (
+                        <>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">EMR Spark</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">AWS Glue</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">Airflow (MWAA)</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">Redshift</span>
+                        </>
+                      )}
+                      {evolutionPhase === 3 && (
+                        <>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">AWS Kinesis</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">AWS Lambda</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">DynamoDB</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">Redis Cache</span>
+                        </>
+                      )}
+                      {evolutionPhase === 4 && (
+                        <>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">Apache Flink</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">RocksDB State</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">Redis Cluster</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">DynamoDB</span>
+                        </>
+                      )}
+                      {evolutionPhase === 5 && (
+                        <>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">SageMaker Pipeline</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">LFS blacklists</span>
+                          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded text-[9.5px] font-mono text-slate-400">RBAC Masking</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-2">
+                  <span className="text-[10px] text-emerald-450 font-bold uppercase tracking-wider block">Acceptance Gate Criteria</span>
+                  <ul className="text-[10.5px] text-slate-400 font-sans list-disc pl-4 space-y-1.5">
+                    {evolutionPhase === 1 && (
+                      <>
+                        <li>Score output matches PoC holdout dataset exactly.</li>
+                        <li>Partition-level database writes are verified idempotent.</li>
+                        <li>S3 Medallion storage structure conforms to Glue metadata catalog.</li>
+                      </>
+                    )}
+                    {evolutionPhase === 3 && (
+                      <>
+                        <li>API schemas conform to v1.38 Partner Integration Specifications.</li>
+                        <li>P95 lookup response latency is verified under 2.0 seconds.</li>
+                        <li>JWS signature headers and JWE encryption payloads function over VPN.</li>
+                      </>
+                    )}
+                    {evolutionPhase === 4 && (
+                      <>
+                        <li>Direct carrier event streams parse with latency under 2.0 seconds.</li>
+                        <li>In-memory Redis cache scoring lookups resolve under 10 milliseconds (P99 &lt; 50ms).</li>
+                        <li>Dirty flags automatically trigger background DynamoDB refreshes.</li>
+                      </>
+                    )}
+                    {evolutionPhase === 5 && (
+                      <>
+                        <li>Model monitoring triggers automatic retrain runs on drift (PSI &gt; 0.2).</li>
+                        <li>GDPR compliance checks confirm automatic PII redacting/masking under RBAC.</li>
+                      </>
+                    )}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Right Column: Architectural Infographic View */}
+              <div className="lg:col-span-8 bg-slate-950 p-3 rounded-xl border border-slate-850 space-y-3 flex flex-col items-center">
+                <span className="text-[10px] text-slate-500 font-mono block self-start">
+                  {evolutionPhase === 1 && "Ingestion flow: MySQL -> Spark -> Bronze -> Silver -> Gold (Redshift)"}
+                  {evolutionPhase === 3 && "Ingestion flow: API Webhooks -> Kinesis -> Lambda -> DynamoDB + Redis"}
+                  {evolutionPhase === 4 && "Ingestion flow: Direct Logs -> Flink CEP -> RocksDB State -> DynamoDB + Redis"}
+                  {evolutionPhase === 5 && "Ingestion flow: Multi-carrier streams + Bad Actor Exchange + Retrain Loop"}
+                </span>
+                
+                <div className="w-full bg-slate-900 border border-slate-800 rounded-lg overflow-hidden flex items-center justify-center p-2 min-h-[300px]">
+                  {evolutionPhase === 1 && (
+                    <img 
+                      src="/enstream_phase_1_2_batch_architecture.png" 
+                      alt="Phase 1 & 2 Batch Architecture"
+                      className="max-w-full max-h-[420px] object-contain"
+                    />
+                  )}
+                  {evolutionPhase === 3 && (
+                    <img 
+                      src="/enstream_phase_3_serverless_architecture.png" 
+                      alt="Phase 3 Serverless Ingest Architecture"
+                      className="max-w-full max-h-[420px] object-contain"
+                    />
+                  )}
+                  {evolutionPhase === 4 && (
+                    <img 
+                      src="/enstream_phase_4_enterprise_architecture.png" 
+                      alt="Phase 4 Enterprise Stateful Ingest Architecture"
+                      className="max-w-full max-h-[420px] object-contain"
+                    />
+                  )}
+                  {evolutionPhase === 5 && (
+                    <img 
+                      src="/enstream_detailed_architecture_v3.png" 
+                      alt="Phase 5 Northstar Systems Architecture"
+                      className="max-w-full max-h-[420px] object-contain"
+                    />
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

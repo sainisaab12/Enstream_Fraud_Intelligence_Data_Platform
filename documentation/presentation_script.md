@@ -19,7 +19,7 @@ However, building a large-scale data platform for telco volumes cannot happen in
 4. **Phase 4: Source-Direct Real-Time**: Implementing direct carrier streaming feeds and point-lookup cache layers.
 5. **Phase 5: Continuous Everything**: Operationalizing automated retraining loops and multi-sector fraud exchange hubs.
 
-In this 30-minute demonstration, we will walk through each phase one by one. I will navigate to the relevant consoles in the prototype to show you the exact code execution, pipeline flows, and dashboards that satisfy the strict acceptance criteria for each milestone. Let's begin with Phase 1."
+In this 30-minute demonstration, we will walk through this evolutionary lifecycle. To make this clear, we have built an interactive **Architecture Evolution console** in the prototype. We will select each phase, inspect the corresponding architectural diagrams and technology stacks, and then jump directly to the conformed working panels to verify that our acceptance gates are fully satisfied."
 
 ### Speaker Action Log
 *   **Visual Direction**: Load the prototype in your browser.
@@ -29,33 +29,35 @@ In this 30-minute demonstration, we will walk through each phase one by one. I w
 
 ---
 
-## [03:00 - 08:00] Segment 2: Phase 1 - Batch Operationalized
+## [03:00 - 08:00] Segment 2: Phase 1 & 2 - Batch Baseline
 
 ### Spoken Narrative
-"Phase 1 represents the 'As-Is' legacy infrastructure that our vendor teams inherit. The baseline starting point is a **1.0 Terabyte MySQL reporting database** growing at **7 Gigabytes every single day**, carrying records of API requests and customer-specific events from Rogers, Bell, and Telus. At peak, this database receives **400 raw records per second** excluding Rogers, which drops batch files every two minutes.
+"Let's open the **Architecture Evolution** console and click on **Phase 1-2 (Batch)**. 
 
-Let's look at the **Medallion Spec** tab. Here, you see how we map this legacy schema to a conformed Medallion lakehouse. Our Bronze layer lands raw JSON strings directly from the event streams to guarantee data persistence. We limit the scope of our database promotion effort to the precise tables defined in the vendor brief: records of customer API requests and customer journey events.
+This diagram visualizes our batch baseline. In this phase, our data flow extracts event telemetry from a legacy **1.0 Terabyte MySQL database** growing at **7 Gigabytes every day**. At peak, this database receives **400 raw records per second** excluding Rogers, which drops batch files every two minutes. 
 
-Under Phase 1, our primary goal is to operationalize this batch data flow. We move data incrementally from the MySQL reporting database to an S3 Parquet landing zone using Spark batch runs. In our **Vendor Brief** subtab under Technical Working, you can see our orchestration assessment: we utilize **AWS Managed Workflows for Apache Airflow (MWAA)** to schedule these batch promotion jobs. MWAA gives us the Python-native flexibility to trace retries and manage complex DAG schedules.
+To move this data, we run nightly **EMR Spark** and **AWS Glue** jobs scheduled by **AWS Managed Workflows for Apache Airflow (MWAA)**. Spark writes the raw telemetry to S3 Bronze in Parquet format, validates formats, promotes conformed events to S3 Silver, and loads analytical features into Redshift Serverless Gold tables. The serving path is batch-only: API queries read pre-calculated scores directly from the analytical Gold tables, resolving within normal database latencies of over 150 milliseconds.
 
-Now, let's inspect the **Ops Center**. This terminal console simulates the live execution log of these batch runs. As you can see, our Spark promotion jobs run incrementally, reading raw records from the Bronze table, running initial schema validations, promoting them to conformed formats in the Silver table, and building our analytical Gold tables.
+Let's look at the conformed data mapping under the **Medallion Spec** tab. Here, you see how we map this legacy schema. Our Bronze layer lands raw JSON strings directly from the event streams to guarantee data persistence. We limit our integration scope to the precise tables defined in the vendor brief: records of customer API requests and customer journey events.
+
+In the **Ops Center**, we can see these batch promotion runs in progress. As you can see, our Spark promotion jobs run incrementally, reading raw records from the Bronze table, running initial schema validations, promoting them to conformed formats in the Silver table, and building our analytical Gold tables.
 
 **Phase 1 Acceptance Criteria Fulfillment:**
 How do we prove that Phase 1 is successfully completed? The criteria require that our score outputs match the PoC holdout data exactly and that database reads are fully idempotent. In the terminal log, you can see that each Spark promotion task utilizes partition-level overwrites based on event timestamps. This ensures that even if a pipeline runs twice, the destination database remains conformed and duplicate rows are prevented. With the baseline batch pipeline running stably, we can proceed to automate and govern the data lifecycle in Phase 2."
 
 ### Speaker Action Log
-*   **Click Action**: Click on **Medallion Spec** in the sidebar.
-*   **Scroll**: Scroll to the bottom to display the **MySQL Reporting Database Integration Scope** table.
-*   **Click Action**: Click on **Technical Working** in the sidebar, and select the **Vendor Brief & Feedback** subtab.
-*   **Click Action**: Click on **Ops Center** in the sidebar.
-*   **Visual Direction**: Point to the scrolling text showing Bronze -> Silver -> Gold Spark logs.
+*   **Click Action**: Click on the **Architecture Evolution** subtab.
+*   **Click Action**: Click on the **Phase 1-2 (Batch)** selector button.
+*   **Visual Direction**: Point to the Phase 1-2 diagram on the right, and key technologies/criteria on the left.
+*   **Click Action**: Click on **Medallion Spec** in the sidebar. Scroll to the MySQL tables scope.
+*   **Click Action**: Click on **Ops Center** in the sidebar. Point to the Spark logs.
 
 ---
 
 ## [08:00 - 13:00] Segment 3: Phase 2 - Batch Automated & DQ SLAs
 
 ### Spoken Narrative
-"Once the batch pipeline is operational, Phase 2 focuses on automation, quality SLA governance, and continuous model monitoring. Real-time telco fraud detection requires strict data quality checks before any record can be used to update a subscriber's risk profile.
+"Under Phase 2, we automate this scheduled batch execution and enforce strict data quality gates. 
 
 If we navigate to the **DQ Monitor** tab, we can see the automated governance system in action. First, look at the **Ingestion Latency SLA** cards. Because Rogers drops event files every 2 minutes while Bell and Telus stream live, our pipeline monitor tracks the latency of raw inputs. You can see Rogers average latency is 1.9 seconds, which complies with our target 2-minute SLA.
 
@@ -69,52 +71,50 @@ Additionally, our automated batch system must ensure that the ML models scoring 
 Phase 2 is completed when ingestion pipelines run on schedule, data quality meets SLA rules, and we run successful rollback drills. The self-healing audit ledger and drift dashboard prove that the platform maintains zero score drift and can dynamically heal itself during carrier outages without human intervention. This brings us to Phase 3, where we expose the data via REST interfaces."
 
 ### Speaker Action Log
-*   **Click Action**: Click on **DQ Monitor** in the left sidebar.
-*   **Gesture**: Point to the Bell, Rogers, and Telus Ingestion SLA cards.
+*   **Click Action**: Click on **Technical Working** -> **Architecture Evolution** to show automation metrics.
+*   **Click Action**: Click on **DQ Monitor** in the left sidebar. Point to Ingestion latency cards.
 *   **Scroll**: Scroll down to the **SLA Rules Audit Ledger** table.
-*   **Click Action**: Scroll to the **Self-Healing & Reconciliation** section at the bottom, and click the **"Trigger Manual Reconciliation Audit"** button.
-*   **Wait**: Let the log complete its output (takes about 2 seconds).
-*   **Click Action**: Click on **ML Registry** in the sidebar. Point out the PSI line chart.
+*   **Click Action**: Click the **"Trigger Manual Reconciliation Audit"** button at the bottom.
+*   **Click Action**: Click on **ML Registry** in the sidebar. Point to the PSI drift line chart.
 
 ---
 
 ## [13:00 - 18:00] Segment 4: Phase 3 - Interim Real-Time & Partner API Sandbox
 
 ### Spoken Narrative
-"With Phase 3, we transition to real-time integration. In this phase, we establish an interim real-time query layer. While carrier streaming streams are being set up, we serve real-time scoring requests via Kinesis MSK indexing and Flink streaming, querying conformed profile tables.
+"Let's return to the **Architecture Evolution** console and click on **Phase 3 (Serverless Stream)**.
 
-To enable partner integrations, we must align our interface with the **EnStream Network Subscriber Verification Core - Partner Integration Guide Phase 2.0 v1.38**. Let's open the **Partner API Sandbox** under Technical Working.
+This diagram shows our serverless streaming path. Telco CRM updates and webhooks are published to **Amazon Kinesis Data Streams**. An **AWS Lambda function** reads the shards, writes the raw telemetry to the S3 Bronze table, updates conformed feature attributes in **Amazon DynamoDB** (acting as our Active Feature Store), and evicts cached entries in **ElastiCache Redis**. API Gateway and Step Functions serve our REST APIs directly from Redis (< 10ms) or fall back to DynamoDB (< 50ms).
 
-This playground exposes all 13 standard REST APIs defined in the integration guide. In the sidebar list, I can select any operation. For instance, selecting **A1 Basic IDV** displays the exact request schema for validating customer names and conformed carrier address fields. Selecting **A3 Account Type** retrieves prepaid/postpaid flags, business class preferences, and language codes. Selecting **D3M Multi recent changes** allows partners to query up to five subscriber numbers in a single batch array to check for SIM swaps.
+This is a highly cost-effective and scalable pattern for our 400 events/second ingress. It handles our real-time query load with sub-50ms execution times for a fraction of the cost of running a full streaming cluster.
+
+Now, let's open the **Partner API Sandbox** subtab. This playground exposes all 13 standard REST APIs defined in the integration guide. In the sidebar list, I can select any operation. For instance, selecting **A1 Basic IDV** displays the exact request schema for validating customer names and conformed carrier address fields. Selecting **A3 Account Type** retrieves prepaid/postpaid flags, business class preferences, and language codes. Selecting **D3M Multi recent changes** allows partners to query up to five subscriber numbers in a single batch array to check for SIM swaps.
 
 Furthermore, security is paramount. The integration guide mandates strict cryptographic envelopes. I will check the box to **'Enable JOSE JWS/JWE Protection'**. When enabled, the system wraps our request in an RFC7515/7516 compliant signature and encryption layer. Clicking **'Send Rest API Request'** executes a simulated VPN call. The terminal log displays the HTTP Basic Authentication headers and Jakarta User-Agent tags, then shows the JWS protected header—complete with RS256 algorithm signatures, partner key identifiers, expiration timestamps, and operation tags. The request payload is encrypted using AES-256-GCM, matching the carrier's production security profile.
-
-Directly below, the **Response Code Explanation Ledger** maps the exact response codes defined in the guide. If a lookup is successful, it returns Code 0. If a partner sends a duplicate request ID, it returns Code 2. If VPN access is blocked, it returns Code 4. If the target subscriber is a corporate account or has active carrier blocks, it returns Code 7. If the security token is expired, it returns Code 15.
 
 **Phase 3 Acceptance Criteria Fulfillment:**
 The acceptance criteria for Phase 3 require that our APIs conform to the integration guide and deliver P95 latency under 2 seconds. The Sandbox sandbox proves that our endpoints, payload headers, cryptographic envelopes, and response ledgers are 100% conformed to the carrier specifications, setting the stage for full real-time streaming in Phase 4."
 
 ### Speaker Action Log
-*   **Click Action**: Click on **Technical Working** in the left sidebar.
+*   **Click Action**: Click on **Technical Working** -> **Architecture Evolution** in the sidebar.
+*   **Click Action**: Click on the **Phase 3 (Serverless Stream)** selector button.
 *   **Subtab Action**: Click on the **Partner API Sandbox** subtab.
-*   **Click Action**: Select **A1: Basic Identity Verification** in the list, then select **A3: Account Type API**, then select **D3M: Recent Service Changes API (Multi)**.
+*   **Click Action**: Select **A1: Basic Identity Verification** in the list, then select **D3M: Recent Changes Multi**.
 *   **Check Action**: Check the **Enable JOSE JWS/JWE Protection** checkbox.
-*   **Click Action**: Click the blue **"Send Rest API Request"** button.
-*   **Visual Direction**: Point to the decrypted JWS protected headers and encrypted ciphertext body in the terminal.
-*   **Scroll**: Scroll down to display the **Response Code Explanation Ledger**.
+*   **Click Action**: Click the blue **"Send Rest API Request"** button. Point to headers in logs.
 
 ---
 
 ## [18:00 - 24:00] Segment 5: Phase 4 - Source-Direct Real-Time & Caching Performance
 
 ### Spoken Narrative
-"Phase 4 represents our core real-time streaming production milestone. In this phase, we deploy direct carrier streaming feeds via Apache Flink and establish our Northstar low-latency query layer. 
+"Let's return to the **Architecture Evolution** console and click on **Phase 4 (Stateful Stream)**.
 
-When querying real-time scores, we must support **1 million to 5 million requests per day**—which translates to a steady-state peak of **500 queries per second**. Telco SLAs are extremely strict, requiring response times under 100 milliseconds. If every API request had to query our analytical warehouse, the database would quickly choke, violating the SLA.
+Here, you see the deployment of direct carrier streaming feeds. **Apache Flink (Kinesis Data Analytics)** replaces Lambda for the streaming path. Flink maintains rolling time windows in-memory using its RocksDB state backend. This allows Flink to execute complex, stateful Event Processing—such as checking SIM swap velocities (counting card updates $\ge 3$ within a 2-hour window) and graph ring network sizes across shared hardware—in under 10 milliseconds. Flink writes verified feature aggregates to DynamoDB and evicts expired keys from Redis.
 
-To solve this, we isolate our scoring pathway using an event-driven cache. Let's look at the **Low-Latency Cache & Performance Monitor** at the bottom of the sandbox.
+Let's scroll to the **Low-Latency Cache & Performance Monitor** at the bottom of the sandbox page to see how we handle these queries.
 
-Here, you can test how our caching layer handles query paths. I will select the **Auto (Redis Hit)** mode and click **'Send Rest API Request'**. Look at the query latency speedometer: it resolves in just **4.8 milliseconds**, marked in bright green with a `HIT (Redis)` status. The lookup is resolved entirely in-memory using an Amazon ElastiCache Redis cluster, returning cached subscriber scores in single-digit milliseconds.
+I will select the **Auto (Redis Hit)** mode and click **'Send Rest API Request'**. Look at the query latency speedometer: it resolves in just **4.8 milliseconds**, marked in bright green with a `HIT (Redis)` status. The lookup is resolved entirely in-memory using an Amazon ElastiCache Redis cluster, returning cached subscriber scores in single-digit milliseconds.
 
 But what happens when fresh telemetry arrives? When a carrier streams a SIM swap or device update, it raises a 'dirty flag' for that MSISDN. I will select **Bypass (Dirty Flag)** and send a request. The latency speedometer increases to **56.5 milliseconds**, marked in amber. In the logs, you can see the cache bypass: the query goes directly to our active **Amazon DynamoDB Feature Store** to retrieve the conformed profile details. This ensures the scoring engine uses fresh data, recalculates the score, and updates the Redis cache.
 
@@ -130,21 +130,24 @@ Let's inspect the results in the **Query Investigator**. When we query `14165559
 Phase 4 is completed when raw event transit latency is under 2 seconds and queries resolve under 100ms. The latency simulator, live metrics dashboard, and query investigator prove that the platform easily handles high volumes at single-digit millisecond speeds, resolving all latency concerns."
 
 ### Speaker Action Log
-*   **Scroll**: Under the **Partner API Sandbox** subtab, scroll to the **Low-Latency Cache & Performance Monitor** widget.
-*   **Radio Select**: Select **Auto (Redis Hit)**. Click **"Send Rest API Request"**. Point to the green speedometer displaying **~4.8 ms**.
-*   **Radio Select**: Select **Bypass (Dirty Flag)**. Click **"Send Rest API Request"**. Point to the amber speedometer displaying **~56.5 ms**.
-*   **Radio Select**: Select **Cold DB Fallback**. Click **"Send Rest API Request"**. Point to the red speedometer displaying **~192.8 ms**.
-*   **Click Action**: Click on **Event Ingress** in the left sidebar.
-*   **Click Action**: Click **"Simulate SIM Swap"** under Rogers. Watch the telemetry pulse.
-*   **Click Action**: Click on **Query Investigator** in the sidebar.
-*   **Select Action**: Choose `14165559001` or `14165559013`. Point to the Bipartite Graph, SHAP chart, and Iceberg Time-Travel snapshot table.
+*   **Click Action**: Click on **Technical Working** -> **Architecture Evolution**.
+*   **Click Action**: Click on the **Phase 4 (Stateful Stream)** selector button.
+*   **Subtab Action**: Click on **Partner API Sandbox** subtab.
+*   **Scroll**: Scroll down to the **Low-Latency Cache & Performance Monitor** widget.
+*   **Radio Select**: Select **Auto (Redis Hit)**. Click **"Send Rest API Request"**. Point to **~4.8 ms**.
+*   **Radio Select**: Select **Bypass (Dirty Flag)**. Click **"Send Rest API Request"**. Point to **~56.5 ms**.
+*   **Radio Select**: Select **Cold DB Fallback**. Click **"Send Rest API Request"**. Point to **~192.8 ms**.
+*   **Click Action**: Click on **Event Ingress** in the left sidebar. Click **"Simulate SIM Swap"** under Rogers.
+*   **Click Action**: Click on **Query Investigator** in the sidebar. Select `14165559001` or `14165559013`. Point to the Bipartite Graph, SHAP chart, and Iceberg Snapshot table.
 
 ---
 
 ## [24:00 - 28:00] Segment 6: Phase 5 - Continuous Everything & Exchange Hub
 
 ### Spoken Narrative
-"Phase 5 represents the continuous operational state of the EnStream platform. In this phase, we expand the platform's capabilities beyond a single carrier to support a **Cross-Sector Bad Actor Data Exchange Hub**.
+"Let's return to the **Architecture Evolution** console and click on **Phase 5 (Northstar)**.
+
+This diagram shows the complete continuous operation state. In this final phase, model registries monitor PSI inputs continuously. If PSI > 0.2, an automated retraining pipeline is triggered on SageMaker. We also integrate the **Cross-Sector Bad Actor Data Exchange Hub**, allowing participating networks to share and lookup blacklisted actors via RBAC-masked APIs.
 
 Let's open the **Exchange Hub**. This console allows participating carriers, banks, and credit bureaus to contribute blacklists and run real-time checks on suspected fraud actors. In our **Data Contribution** panel, you can see conformed contributions from Incedo, Rogers, Bell, Telus, and credit networks like TransUnion.
 
@@ -160,11 +163,11 @@ Finally, let's look at the **Executive Desk**. This is the aggregate control roo
 Phase 5 is completed when we have automated ML retraining loops, continuous drift checks, and active data exchanges. The Exchange Hub and Executive Desk demonstrate that EnStream operates as a secure, privacy-compliant, multi-carrier clearinghouse, ensuring continuous protection across sectors."
 
 ### Speaker Action Log
+*   **Click Action**: Click on **Technical Working** -> **Architecture Evolution**.
+*   **Click Action**: Click on the **Phase 5 (Northstar)** selector button.
 *   **Click Action**: Click on **Exchange Hub** in the left sidebar.
-*   **Scroll**: Show the contributions ledger list.
 *   **Click Action**: Scroll to the **Cross-Sector Lookup** card and click **"Execute API Lookup Query"**.
 *   **Select Action**: Change the **Privacy Role** dropdown from `Fraud Analyst` to `Public User`.
-*   **Visual Direction**: Point out the replacement of names and numbers with asterisks `***`.
 *   **Click Action**: Click on **Executive Desk** in the left sidebar. Point out the live map and high-risk alerts table.
 
 ---

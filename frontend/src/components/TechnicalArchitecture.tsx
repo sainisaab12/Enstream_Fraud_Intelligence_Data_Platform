@@ -2,11 +2,12 @@ import { BACKEND_URL } from "../config";
 import React, { useState, useEffect } from "react";
 import { 
   Code, Database, Server, Cpu, HelpCircle, Layers, 
-  CheckCircle, FileText, Settings, ShieldAlert, GitBranch, Play, PlayCircle, Loader, Terminal
+  CheckCircle, FileText, Settings, ShieldAlert, GitBranch, Play, PlayCircle, Loader, Terminal,
+  TrendingUp, BarChart2, Shield, AlertCircle, RefreshCw
 } from "lucide-react";
 
 export default function TechnicalArchitecture() {
-  const [activeSubTab, setActiveSubTab] = useState<"trace" | "topology" | "code" | "schemas" | "aws">("trace");
+  const [activeSubTab, setActiveSubTab] = useState<"trace" | "roadmap" | "brief" | "topology" | "code" | "schemas" | "aws">("trace");
   const [selectedCodeSection, setSelectedCodeSection] = useState<string>("dq");
   
   // Trace console states
@@ -31,22 +32,19 @@ export default function TechnicalArchitecture() {
     setSilverMetadata(null);
     
     try {
-      // 1. Fetch live profile entity details
       const entityRes = await fetch(`${BACKEND_URL}/api/entity/${targetMsisdn}`);
       if (entityRes.ok) {
         const data = await entityRes.json();
         setTraceData(data);
       }
       
-      // 2. Fetch Bronze Iceberg metadata file content
-      const bronzeRes = await fetch("${BACKEND_URL}/api/data/metadata/bronze");
+      const bronzeRes = await fetch(`${BACKEND_URL}/api/data/metadata/bronze`);
       if (bronzeRes.ok) {
         const metadata = await bronzeRes.json();
         setBronzeMetadata(metadata);
       }
 
-      // 3. Fetch Silver Iceberg metadata file content
-      const silverRes = await fetch("${BACKEND_URL}/api/data/metadata/silver");
+      const silverRes = await fetch(`${BACKEND_URL}/api/data/metadata/silver`);
       if (silverRes.ok) {
         const metadata = await silverRes.json();
         setSilverMetadata(metadata);
@@ -218,8 +216,9 @@ export default function TechnicalArchitecture() {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Tab Navigation header */}
+    <div className="space-y-6 animate-fadeIn font-sans text-slate-100">
+      
+      {/* Top Banner Navigation */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-extrabold text-slate-200 uppercase tracking-wider flex items-center">
@@ -227,7 +226,7 @@ export default function TechnicalArchitecture() {
             System Architecture & Technical Working
           </h3>
           <p className="text-xs text-slate-400 mt-1">
-            Dive under the hood of the EnStream fraud platform. Run live traces, inspect code execution, and view parquet Iceberg metadata.
+            Explore the transition roadmap, vendor design parameters, and run live pipeline traces on conformed data.
           </p>
         </div>
 
@@ -235,15 +234,31 @@ export default function TechnicalArchitecture() {
           <button
             onClick={() => setActiveSubTab("trace")}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-              activeSubTab === "trace" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-350"
+              activeSubTab === "trace" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
             }`}
           >
             Live Execution Trace
           </button>
           <button
+            onClick={() => setActiveSubTab("roadmap")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+              activeSubTab === "roadmap" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            Phase Roadmap
+          </button>
+          <button
+            onClick={() => setActiveSubTab("brief")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+              activeSubTab === "brief" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            Vendor Brief & Feedback
+          </button>
+          <button
             onClick={() => setActiveSubTab("topology")}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-              activeSubTab === "topology" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-350"
+              activeSubTab === "topology" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
             }`}
           >
             Data Topology
@@ -251,7 +266,7 @@ export default function TechnicalArchitecture() {
           <button
             onClick={() => setActiveSubTab("code")}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-              activeSubTab === "code" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-350"
+              activeSubTab === "code" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
             }`}
           >
             Code Inspector
@@ -259,7 +274,7 @@ export default function TechnicalArchitecture() {
           <button
             onClick={() => setActiveSubTab("schemas")}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-              activeSubTab === "schemas" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-350"
+              activeSubTab === "schemas" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
             }`}
           >
             Data Schemas
@@ -267,7 +282,7 @@ export default function TechnicalArchitecture() {
           <button
             onClick={() => setActiveSubTab("aws")}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-              activeSubTab === "aws" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-350"
+              activeSubTab === "aws" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
             }`}
           >
             AWS Integration
@@ -275,10 +290,9 @@ export default function TechnicalArchitecture() {
         </div>
       </div>
 
-      {/* LIVE EXECUTION TRACER VIEW */}
+      {/* SUB-TAB 1: LIVE EXECUTION TRACER */}
       {activeSubTab === "trace" && (
         <div className="space-y-6">
-          {/* Target lookup bar */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center space-x-3 text-xs w-full md:w-auto">
               <span className="text-slate-400 font-bold whitespace-nowrap">Select Target Entity:</span>
@@ -313,10 +327,7 @@ export default function TechnicalArchitecture() {
             </button>
           </div>
 
-          {/* Tracer Panels Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* DQ SLA Assertions Console */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
               <div className="border-b border-slate-800 pb-3">
                 <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
@@ -330,7 +341,6 @@ export default function TechnicalArchitecture() {
                 <div className="py-12 flex justify-center"><Loader className="w-6 h-6 animate-spin text-blue-500" /></div>
               ) : traceData ? (
                 <div className="space-y-4 text-xs">
-                  {/* Table of assertions */}
                   <div className="bg-slate-950 border border-slate-850 rounded-lg overflow-hidden">
                     <table className="w-full text-left font-mono text-[10.5px]">
                       <thead>
@@ -365,7 +375,6 @@ export default function TechnicalArchitecture() {
                     </table>
                   </div>
 
-                  {/* DQ passed block */}
                   <div className="p-3 bg-slate-950 border border-slate-850 rounded-lg flex items-center justify-between">
                     <span className="font-bold">Automated DQ Status:</span>
                     <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono font-bold rounded-full">
@@ -378,7 +387,6 @@ export default function TechnicalArchitecture() {
               )}
             </div>
 
-            {/* Graph BFS Traversal component */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
               <div className="border-b border-slate-800 pb-3">
                 <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
@@ -419,7 +427,6 @@ export default function TechnicalArchitecture() {
               )}
             </div>
 
-            {/* Rules Engine Deductions */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
               <div className="border-b border-slate-800 pb-3">
                 <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
@@ -439,7 +446,7 @@ export default function TechnicalArchitecture() {
                       <span className="text-slate-400 font-bold">Points Deducted</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-350">Base Trust Score</span>
+                      <span className="text-slate-355">Base Trust Score</span>
                       <span className="text-emerald-450 font-bold">+100</span>
                     </div>
                     {Object.entries(traceData.score.explainability || {}).map(([key, val]: [string, any]) => (
@@ -474,7 +481,6 @@ export default function TechnicalArchitecture() {
               )}
             </div>
 
-            {/* Iceberg Metadata json Viewer */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
               <div className="border-b border-slate-800 pb-3">
                 <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
@@ -500,12 +506,274 @@ export default function TechnicalArchitecture() {
                 <div className="py-12 text-center text-slate-500 text-xs">Run trace to fetch Iceberg metadata.</div>
               )}
             </div>
-
           </div>
         </div>
       )}
 
-      {/* TOPOLOGY VIEW */}
+      {/* SUB-TAB 2: PHASE ROADMAP */}
+      {activeSubTab === "roadmap" && (
+        <div className="space-y-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+            <h4 className="text-xs font-extrabold uppercase text-slate-350 tracking-wider flex items-center border-b border-slate-800 pb-3">
+              <TrendingUp className="w-4 h-4 mr-2 text-blue-500" />
+              Transition Roadmap: Path to Northstar Architecture
+            </h4>
+            
+            {/* Horizontal timeline cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mt-5">
+              
+              {/* Phase 1 */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-2 relative">
+                <div className="absolute -top-2 -right-2 bg-emerald-500/20 text-emerald-450 border border-emerald-500/30 text-[9px] font-black uppercase px-1.5 py-0.5 rounded">
+                  AS-IS (Active)
+                </div>
+                <div className="text-[10px] font-mono text-blue-400 uppercase">Phase 1 (End-June)</div>
+                <h5 className="font-bold text-slate-200 text-xs">Batch Operationalized</h5>
+                <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                  Incremental load from MySQL reporting DB to Bronze S3. batch B→S→G Spark jobs. manual ML scoring to S3/Redshift Serverless catalog substrate.
+                </p>
+                <div className="text-[9.5px] text-slate-500 font-mono border-t border-slate-850 pt-1.5 mt-2">
+                  <span className="block font-bold text-slate-400">Acceptance Gate:</span>
+                  Scores reconcile to holdout PoC logic. Idempotency on MySQL loader retry.
+                </div>
+              </div>
+
+              {/* Phase 2 */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-2">
+                <div className="text-[10px] font-mono text-blue-400 uppercase">Phase 2 (Early-July)</div>
+                <h5 className="font-bold text-slate-200 text-xs">Batch Automated</h5>
+                <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                  Automated scheduling via MWAA (Airflow) / AWS Step Functions. Dependency retry mapping. platform DQ layer on S3 & alerting alerts.
+                </p>
+                <div className="text-[9.5px] text-slate-500 font-mono border-t border-slate-850 pt-1.5 mt-2">
+                  <span className="block font-bold text-slate-400">Acceptance Gate:</span>
+                  Scheduled runs meet SLAs. Zero score divergence from Phase 1. 1 rollback drill.
+                </div>
+              </div>
+
+              {/* Phase 3 */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-2">
+                <div className="text-[10px] font-mono text-blue-400 uppercase">Phase 3 (End-August)</div>
+                <h5 className="font-bold text-slate-200 text-xs">Interim Real-Time</h5>
+                <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                  Temporary real-time score query path via Kinesis MSK indexing on IDV database. Flink streaming. Online Feature Store serving sync API.
+                </p>
+                <div className="text-[9.5px] text-slate-500 font-mono border-t border-slate-850 pt-1.5 mt-2">
+                  <span className="block font-bold text-slate-400">Acceptance Gate:</span>
+                  P95 &lt; 2s / P99 &lt; 5s API latency budget. fallback failover to last batch score.
+                </div>
+              </div>
+
+              {/* Phase 4 */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-2">
+                <div className="text-[10px] font-mono text-blue-400 uppercase">Phase 4 (End-December)</div>
+                <h5 className="font-bold text-slate-200 text-xs">Source-Direct Real-Time</h5>
+                <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                  Retire IDV databases. Carrier-direct event feeds (Flink/DMS stream). Schema registry validation at boundary. Event replay and backfills.
+                </p>
+                <div className="text-[9.5px] text-slate-500 font-mono border-t border-slate-850 pt-1.5 mt-2">
+                  <span className="block font-bold text-slate-400">Acceptance Gate:</span>
+                  P95 &lt; 2s from raw source event timestamp. Equivalence validation on replay.
+                </div>
+              </div>
+
+              {/* Phase 5 */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-2">
+                <div className="text-[10px] font-mono text-blue-400 uppercase">Phase 5 (Continuous)</div>
+                <h5 className="font-bold text-slate-200 text-xs">Continuous Everything</h5>
+                <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                  Continuous ML drift tracking. Automated retraining & eval harness. promotion gates. Golden evaluation datasets pipeline.
+                </p>
+                <div className="text-[9.5px] text-slate-500 font-mono border-t border-slate-850 pt-1.5 mt-2">
+                  <span className="block font-bold text-slate-400">Acceptance Gate:</span>
+                  Traceable build release. automated rollback triggered on drift/DQ breach.
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB 3: VENDOR BRIEF & ARCHITECTURE EVALUATION */}
+      {activeSubTab === "brief" && (
+        <div className="space-y-6 font-sans">
+          
+          {/* Main specifications overview grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* MySQL Database & Volume Specs */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+              <h4 className="text-xs font-extrabold uppercase text-slate-350 tracking-wider flex items-center border-b border-slate-800 pb-2">
+                <Database className="w-4 h-4 mr-2 text-emerald-450" />
+                MySQL Ingestion & Data Volumes
+              </h4>
+              
+              <div className="space-y-4 text-xs">
+                <div>
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Inherited DB Size</span>
+                  <span className="text-lg font-bold font-mono text-emerald-400">1.0 TB</span>
+                  <span className="text-[10px] text-slate-450 ml-2">growing at 7 GB / day</span>
+                </div>
+                
+                <div className="border-t border-slate-850/50 pt-3">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Source Streams Ingress Rate</span>
+                  <span className="text-lg font-bold font-mono text-blue-450">400 records / second</span>
+                  <span className="text-[10px] text-slate-500 block mt-0.5">(Excluding Rogers 2-minute batch drop events)</span>
+                </div>
+
+                <div className="border-t border-slate-850/50 pt-3">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Lineage Entity Volume</span>
+                  <span className="text-lg font-bold font-mono text-amber-500">~30,000,000</span>
+                  <span className="text-[10px] text-slate-450 block mt-0.5">MSISDNs, SIMs, Accounts, and Hardware Devices</span>
+                </div>
+
+                <div className="border-t border-slate-850/50 pt-3">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Score Query Expectations</span>
+                  <span className="text-xs font-bold text-slate-300 block font-mono">
+                    • Start: 1,000,000 requests / day<br/>
+                    • Steady State: 5,000,000 requests / day
+                  </span>
+                </div>
+
+                <div className="border-t border-slate-850/50 pt-3 bg-slate-950 p-2.5 rounded-lg border border-slate-850">
+                  <span className="text-[10px] text-slate-400 font-bold block uppercase mb-1">MySQL Reporting Schema scope:</span>
+                  <p className="text-[10.5px] text-slate-400 leading-normal font-sans">
+                    1. Customer events: records of API verification queries (Integration contract v1.38).<br/>
+                    2. Customer journey events: live API feeds (Bell & Telus) and 2-min file drops (Rogers).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Architecture Responsiveness to Change */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+              <h4 className="text-xs font-extrabold uppercase text-slate-350 tracking-wider flex items-center border-b border-slate-800 pb-2">
+                <RefreshCw className="w-4 h-4 mr-2 text-blue-500" />
+                Change-Responsive Design
+              </h4>
+              
+              <div className="space-y-3.5 text-xs font-sans">
+                <div className="space-y-1">
+                  <h5 className="font-extrabold text-slate-200">1. Data Inputs Change (Schema Drift)</h5>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    By utilizing **Apache Iceberg Schema Evolution**, column additions, renames, and type widening are resolved in metadata without rewriting the S3 parquet storage files. Glue Registry contract gates quarantine breaking drifts immediately to the DLQ.
+                  </p>
+                </div>
+
+                <div className="space-y-1 border-t border-slate-850/50 pt-3">
+                  <h5 className="font-extrabold text-slate-200">2. Business Rules Additions</h5>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Rules are decoupled from pipeline structure. Preprocessing, deductions, and tiers are parameterized inside dynamic JSON config dictionaries. Rules engine recalculates deductions dynamically without modifying spark compile jars.
+                  </p>
+                </div>
+
+                <div className="space-y-1 border-t border-slate-850/50 pt-3">
+                  <h5 className="font-extrabold text-slate-200">3. ML Model Swaps</h5>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    The **MLflow Model Registry** facilitates Champion/Challenger deployment. Promoting a version in the registry fires a trigger to set dirty flags on active MSISDNs, initiating selective recomputations of online feature databases.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Orchestration Analysis & Evaluation */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+              <h4 className="text-xs font-extrabold uppercase text-slate-350 tracking-wider flex items-center border-b border-slate-800 pb-2">
+                <Code className="w-4 h-4 mr-2 text-rose-500" />
+                Orchestration Trade-off Evaluation
+              </h4>
+              
+              <div className="space-y-4 text-xs">
+                <div className="space-y-2">
+                  <div className="flex justify-between font-bold border-b border-slate-850 pb-1 text-[10px] uppercase text-slate-500">
+                    <span>Engine Considered</span>
+                    <span>Use Case & Fit</span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <span className="font-extrabold text-slate-200 block text-xs">AWS Managed Airflow (MWAA)</span>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      *Pros*: Flexible dependency DAGs, python native, excellent retry tracing, perfect for batch runs. *Cons*: Latency is in minutes, unsuitable for event-by-event synchronous scoring.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1 border-t border-slate-850/50 pt-2">
+                    <span className="font-extrabold text-slate-200 block text-xs">AWS Step Functions</span>
+                    <p className="text-slate-400 text-[11px] leading-relaxed">
+                      *Pros*: Sub-second latency, serverless execution, direct integrations with Lambda & Kinesis, low operational overhead. *Cons*: Harder to write complex looping scripts.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 p-2.5 rounded border border-slate-850 text-[10px] text-slate-500 font-mono">
+                  <span className="font-bold text-slate-400">Decision Matrix:</span> We utilize **MWAA** for Stage 1 & 2 batch aggregations / gold recalculations, and cut over to **Step Functions** for Phase 3/4 low-latency API serving routes.
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Subex Case & Bad Actor ML Classification */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-xs font-extrabold uppercase text-slate-350 tracking-wider flex items-center border-b border-slate-800 pb-3">
+                <Shield className="w-4 h-4 mr-2 text-blue-500" />
+                RFP Clarification: Cross-Sector Bad Actor ML Logic
+              </h4>
+              <p className="text-xs text-slate-400 leading-relaxed mt-2 font-sans">
+                The **Cross-Sector Bad Actor Data Exchange** is a core requirement of this RFP engagement. To implement equivalence to proposals like Subex, EnStream is incorporating specialized ML classification logic.
+              </p>
+              
+              <div className="space-y-2 mt-4 text-xs font-mono bg-slate-950 p-4 rounded-xl border border-slate-850">
+                <div className="text-slate-300 font-bold uppercase text-[9px]">Subex Architecture Proposal:</div>
+                <p className="text-slate-400 text-[11px] leading-relaxed font-sans">
+                  Subex proposed migrating the **entire database** from the Bad Actor Platform into their specialized **Fraudzap** application environment, where they run proprietary offline ML algorithms for precise classification.
+                </p>
+                <div className="border-t border-slate-850 pt-2.5 mt-2.5 text-slate-400 text-[11px] leading-relaxed font-sans">
+                  <span className="font-bold text-blue-400 block font-mono uppercase text-[9.5px]">EnStream Modern Parity Approach:</span>
+                  Rather than copying the entire DB off-premises (which triggers governance risks), our platform enables secure model deployment directly onto the AWS Medallion substrate, preserving data residency.
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-extrabold uppercase text-slate-350 tracking-wider flex items-center border-b border-slate-800 pb-3">
+                <HelpCircle className="w-4 h-4 mr-2 text-rose-500" />
+                Strategic Competitive Positioning
+              </h4>
+              <p className="text-xs text-slate-450 leading-relaxed mt-2 font-sans">
+                Our proposed design directly targets the limitations of traditional, rigid system integrator architectures (such as Tech Mahindra or Wipro).
+              </p>
+              
+              <div className="space-y-3 mt-4 text-xs">
+                <div className="flex items-start space-x-2.5">
+                  <div className="w-1.5 h-1.5 bg-rose-500 rounded-full mt-1.5 shrink-0"></div>
+                  <div>
+                    <span className="font-bold text-slate-200 block">Open Table Standards vs. Proprietary Jars</span>
+                    <p className="text-slate-400 text-[10.5px] mt-0.5 leading-relaxed">
+                      Wipro/TechM typically propose black-box proprietary systems, leading to vendor-lock. EnStream's S3 Medallion built on open **Apache Iceberg** tables allows the client's in-house team to easily plug in other analytical platforms.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-2.5 border-t border-slate-850/50 pt-3">
+                  <div className="w-1.5 h-1.5 bg-rose-500 rounded-full mt-1.5 shrink-0"></div>
+                  <div>
+                    <span className="font-bold text-slate-200 block">Selective Real-Time Recompute vs. Global batch runs</span>
+                    <p className="text-slate-400 text-[10.5px] mt-0.5 leading-relaxed">
+                      Competing proposals often rely on resource-heavy nightly global batch recalculations to refresh scores. Our selective **Dirty Flag** BFS component walk reduces computing complexity by recalculating features only for affected accounts.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* SUB-TAB 4: DATA TOPOLOGY */}
       {activeSubTab === "topology" && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-6">
           <div className="border-b border-slate-800 pb-3">
@@ -552,10 +820,9 @@ export default function TechnicalArchitecture() {
         </div>
       )}
 
-      {/* CODE INSPECTOR VIEW */}
+      {/* SUB-TAB 5: CODE INSPECTOR */}
       {activeSubTab === "code" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Sidebar selection */}
           <div className="lg:col-span-3 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg space-y-3 flex flex-col">
             <div className="text-[10px] text-slate-500 uppercase tracking-widest font-mono border-b border-slate-800 pb-2">
               Select Logic Module
@@ -571,12 +838,11 @@ export default function TechnicalArchitecture() {
                 }`}
               >
                 <span className="block font-bold">{value.title}</span>
-                <span className="block text-[9px] text-slate-500 font-mono mt-1">{value.filePath}</span>
+                <span className="block text-[9px] text-slate-550 font-mono mt-1">{value.filePath}</span>
               </button>
             ))}
           </div>
 
-          {/* Code Viewer Panel */}
           <div className="lg:col-span-9 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
             <div className="border-b border-slate-800 pb-3 flex justify-between items-center">
               <div>
@@ -603,10 +869,9 @@ export default function TechnicalArchitecture() {
         </div>
       )}
 
-      {/* SCHEMAS DICTIONARY VIEW */}
+      {/* SUB-TAB 6: DATA SCHEMAS */}
       {activeSubTab === "schemas" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Bronze schema */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
             <div className="border-b border-slate-800 pb-3">
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
@@ -640,7 +905,6 @@ export default function TechnicalArchitecture() {
             </div>
           </div>
 
-          {/* Silver schema */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
             <div className="border-b border-slate-800 pb-3">
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
@@ -661,7 +925,7 @@ export default function TechnicalArchitecture() {
               </div>
               <div className="p-2.5 bg-slate-950/60 rounded border border-slate-850">
                 <span className="text-emerald-400 font-bold">dq_passed</span> <span className="text-slate-500 text-[10px]">(boolean)</span>
-                <p className="text-slate-400 text-[10px] font-sans mt-0.5">Flag indicating if all DQ rules succeeded.</p>
+                <p className="text-slate-400 text-[10px] font-sans mt-0.5">Flag indicating if all DQ checks succeeded.</p>
               </div>
               <div className="p-2.5 bg-slate-950/60 rounded border border-slate-850">
                 <span className="text-emerald-400 font-bold">dq_errors</span> <span className="text-slate-500 text-[10px]">(string)</span>
@@ -670,7 +934,6 @@ export default function TechnicalArchitecture() {
             </div>
           </div>
 
-          {/* Gold schema */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
             <div className="border-b border-slate-800 pb-3">
               <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
@@ -702,7 +965,7 @@ export default function TechnicalArchitecture() {
         </div>
       )}
 
-      {/* AWS CLOUD INTEGRATION VIEW */}
+      {/* SUB-TAB 7: AWS CLOUD INTEGRATION */}
       {activeSubTab === "aws" && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-6">
           <div className="border-b border-slate-800 pb-3">
@@ -714,7 +977,6 @@ export default function TechnicalArchitecture() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
-            {/* Env Table */}
             <div className="space-y-4">
               <h5 className="font-extrabold text-slate-350">1. Hybrid Environment Matrix</h5>
               <p className="text-slate-400 text-[11px] leading-relaxed">
@@ -756,7 +1018,6 @@ export default function TechnicalArchitecture() {
               </div>
             </div>
 
-            {/* Ingress logic explanation */}
             <div className="space-y-4">
               <h5 className="font-extrabold text-slate-355">2. Storage Adapters</h5>
               
@@ -783,6 +1044,7 @@ export default function TechnicalArchitecture() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

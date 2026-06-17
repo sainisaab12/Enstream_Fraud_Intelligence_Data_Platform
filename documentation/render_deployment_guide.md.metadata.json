@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Detailed step-by-step instructions on deploying the EnStream Fraud Platform on Render using the Blueprint render.yaml configuration. Includes Git commands, Render dashboard navigation, and environment variable configuration details.",
+  "updatedAt":  "2026-06-15T11:09:50.133186800Z"
+}

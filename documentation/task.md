@@ -1,0 +1,102 @@
+# Tasks for EnStream Fraud Intelligence Platform (S3 & Iceberg)
+
+- [x] Initialize frontend and backend folders
+- [x] Install dependencies
+  - [x] Add `pyarrow` and `pandas` to `backend/requirements.txt`
+  - [x] Install dependencies using pip
+- [x] Build Backend Service
+  - [x] Implement `backend/app/state.py` for global simulation state
+  - [x] Implement `backend/app/medallion.py` for Apache Iceberg connection and schema setups
+  - [x] Implement `backend/app/seed.py` to write initial records to Iceberg tables
+  - [x] Implement `backend/app/quality.py` for data quality checks
+  - [x] Implement `backend/app/ingestion.py` to append events to Bronze Iceberg table
+  - [x] Implement `backend/app/features.py` for feature engineering & dirty flag selective updates
+  - [x] Implement `backend/app/scoring.py` for fraud scoring engine
+  - [x] Implement `backend/app/models.py` for model registry & drift monitoring
+  - [x] Implement `backend/app/main.py` for FastAPI routes & event stream
+  - [x] Implement `backend/run.py` entrypoint
+- [x] Build Frontend UI
+  - [x] Bootstrap Vite + React + TypeScript project in `frontend/`
+  - [x] Set up layout, Tailwind CSS configuration, and Lucide icons
+  - [x] Build operational consoles (Executive, Operations, Data, DQ, ML, Investigation, Real-Time)
+- [x] Add Medallion Architecture & Data Model Details Tab
+  - [x] Update `App.tsx` navigation & active tab routes
+  - [x] Implement `MedallionArchitectureConsole.tsx` with:
+    - [x] Dynamic Schema Diagram / ERD view showing tables & relationships
+    - [x] Searchable & Filterable Data Dictionary
+    - [x] Transition Transformation playbook showing pipelines & queries
+    - [x] Data Enrichment & Missing Data Resolution (CDC, API lookups, and graph BFS scans)
+    - [x] Storage & Catalog Specifications for S3, Iceberg & Redshift
+  - [x] Verify frontend compiles successfully
+- [x] Enhance Data Quality (DQ) Monitor Console
+  - [x] Add Ingestion Latency SLA cards & pulsators
+  - [x] Add detailed SLA Rules Audit Ledger listing constraints, stage validations, and compliance status
+  - [x] Add Pipeline Self-Healing reconciliation backfill console and simulator
+- [x] Enhance Query Investigator Console
+  - [x] Add Bipartite hardware-sharing MSISDN-IMEI graph network visualizer
+  - [x] Add Apache Iceberg Time-Travel Snapshot Explorer and details panel
+  - [x] Add handset metadata (Apple iPhone, Samsung Galaxy Ultra) and carrier registration area lookups
+  - [x] Add active warehouse profiles catalog and test presets sidebar list for quick selection
+- [x] Verification & Deployment
+  - [x] Launch services and verify data flows
+  - [x] Create root `.gitignore` configuration for clean commits
+  - [x] Write comprehensive Hugging Face Spaces deployment and Dockerfile configuration
+  - [x] Walkthrough documentation
+
+## Phase 2: Cross-Sector Bad Actor Data Exchange MVP Tab
+- [x] Implement backend state properties in `backend/app/state.py` and seed initial exchange data
+- [x] Add backend API endpoints for Exchange Hub in `backend/app/main.py`
+  - [x] Implement `GET /api/exchange/state`
+  - [x] Implement `POST /api/exchange/submit` (validates E.164, taxonomy, schema, and de-duplicates)
+  - [x] Implement `POST /api/exchange/lookup` (runs MNO checks, TransUnion porting SPID checks, and PII match score)
+  - [x] Implement `POST /api/exchange/correct` (updates Active -> Cleared/Withdrawn)
+  - [x] Implement `GET /api/exchange/logs` (retrieves Onboarding, Submission, Correction, and Lookup audit logs)
+- [x] Create React component `frontend/src/components/DataExchangeConsole.tsx`
+  - [x] Implement Data Contribution panel (batch file uploads & validation error display)
+  - [x] Implement Real-Time Lookup panel (lookup query, tracer animation, result disclaimer banners, and sample response JSON print)
+  - [x] Implement Audit & Governance panel (role dropdown with instant PII masking/redaction)
+  - [x] Implement Success Metrics panel (charts for lookups, match rates, prevention ratios, false-positive reports)
+- [x] Integrate Exchange Hub in `frontend/src/App.tsx` (navigation sidebar, header title mapping, main router)
+- [x] Rebuild React frontend and resolve any TypeScript compilation issues
+- [x] Verify local API endpoints and frontend interface functionality
+- [x] Update walkthrough documentation
+- [x] Resolve "Querying Participant" dropdown list missing bug (hotfixed config.ts & DataExchangeConsole.tsx fallback)
+- [x] Create comprehensive demo narrative script for presentation
+- [x] Add mobile layout responsiveness support (hamburger menu and sidebar overlay drawer) for Android/iPhone viewport compatibility
+- [x] Generate word-for-word presentation script and compile to EnStream_Prototype_Presentation_Script.docx
+- [x] Add System Architecture & Technical Working console enhancements (Phase Roadmap & Vendor Brief & Feedback sub-tabs)
+- [x] Integrate MySQL database scale parameters, orchestration trade-offs (MWAA vs Step Functions), competitive positioning, and Subex parity analysis
+- [x] Rebuild and test frontend compilation
+- [x] Commit changes and push to Hugging Face Spaces and GitHub
+- [x] Update documentation (walkthrough.md, design_document.md, demo_narrative.md, and presentation_script.md) and regenerate all Word documents
+
+## Phase 3: Partner API Guide Alignment & Display Title Tuning
+- [x] Rename application title to Enstream-Fraud-Platform-Incedo-Prototype
+  - [x] Update `frontend/index.html` title tag
+  - [x] Update `README.md` metadata title field
+- [x] Expand Partner API Sandbox to cover all 13 standard APIs
+  - [x] Add A3, A6, D1 V1, D1 V2, D1 Retrieval, D2, D3M, and D5 to `apiDetails` configuration
+  - [x] Map correct REST endpoints, section details, and JSON request parameters for all 13 APIs
+  - [x] Simulate HTTP Basic Authentication, Jakarta User-Agent headers, and response scenario validations
+  - [x] Implement detailed JWS signature headers and JWE encryption envelopes
+- [x] Update Documentation and Narratives
+  - [x] Update `walkthrough.md` and `design_document.md`
+  - [x] Update `demo_narrative.md` and `presentation_script.md`
+- [x] Regenerate Microsoft Word Reports
+  - [x] Run document builder scripts to generate `EnStream_Detailed_Technical_Architecture.docx`
+  - [x] Generate `EnStream_Fraud_Intelligence_Platform_Demo_Narrative.docx`
+  - [x] Generate `EnStream_Prototype_Presentation_Script.docx`
+- [x] Rebuild, Commit & Deploy
+  - [x] Run `npm run build` inside `frontend`
+  - [x] Push code to GitHub and Hugging Face Spaces
+  - [x] Verify live deployment
+
+## Phase 4: Low-Latency Caching Interactive Visualization
+- [x] Implement state variables (`cacheMode`, `simulatedLatency`, `simulatedCacheStatus`, `liveStats`) in `TechnicalArchitecture.tsx`
+- [x] Update `handleRunSandbox` to simulate latency based on `cacheMode` and add cache trace logs
+- [x] Implement `Live Cache & Performance Monitor` UI component with latency meter and cache status badge
+- [x] Implement live-drifting cache statistics widgets in `TechnicalArchitecture.tsx`
+- [x] Rebuild, compile, and run `npm run build` in `frontend` to verify zero errors
+- [x] Update markdown files (`design_document.md`, `walkthrough.md`, `demo_narrative.md`, `presentation_script.md`)
+- [x] Regenerate docx files
+- [x] Stage, commit, and push modifications to GitHub and Hugging Face

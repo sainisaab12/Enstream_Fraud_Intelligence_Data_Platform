@@ -1,0 +1,125 @@
+EnStream Fraud Intelligence PlatformPrototype Demo Narrative & Script
+This document provides a step-by-step presentation script and demonstration narrative for showcasing the EnStream Fraud Platform prototype. It is structured to help presenters walk stakeholders (both business executives and technical architects) through the capabilities of the platform.
+Presentation Overview
+:---
+:---
+:---
+:---
+**Section 1**
+Introduction & Executive Console
+High-level business value, Carrier Trust Scores, Risk profile overview
+3 Mins
+**Section 2**
+The Medallion Lakehouse Pipeline
+Real-time event bus, S3/Iceberg storage, automated Data Quality (DQ) SLAs
+5 Mins
+**Section 3**
+Advanced Forensic Investigation
+Bipartite hardware-sharing graph network, Handset TAC details, Iceberg Time-Travel
+5 Mins
+**Section 4**
+Cross-Sector Bad Actor Data Exchange MVP
+Batch contributions, Real-time lookups (Recycle checks), RBAC privacy, GDPR purge
+7 Mins
+**Section 5**
+MLOps Champion/Challenger Lifecycle
+Model registry, drift tracking (PSI), automated score refreshes
+3 Mins
+**Section 6**
+Conclusion & Q&A
+Summary of core architecture benefits
+2 Mins
+Section 1: Executive Dashboard & Control Room
+Narrative Goal
+Show how EnStream aggregates multi-carrier telemetry into a single, actionable Trust Score (0-100) to help fraud analysts evaluate risk instantly.
+Walkthrough Steps
+Navigate to the "Executive Dashboard" tab.
+Point out the core metrics:
+High-Risk Entities: Bring attention to the list of suspicious subscribers flagged by the scoring engine (e.g., trust score $< 50$).
+Explain the score breakdown: Select an entity like `14165559001`. Explain how the score is calculated dynamically based on rule weights (e.g., device-churn rate, SIM-swap recency, and blacklist matches).
+Show the Risk Analytics Panel:
+Point to the SHAP feature contribution chart showing exactly *why* a particular account has a low trust score (e.g., "SIM swap within 24 hours subtracted 45 points").
+> Demo Script Quote:
+> *"Welcome to the EnStream Control Room. What you are seeing here is the consolidation of telemetry from Rogers, Bell, and Telus. Instead of siloed data, the platform combines carrier logs to generate a real-time Carrier Trust Score. By looking at this high-risk queue, an analyst can immediately see accounts exhibiting abnormal porting or SIM-swapping characteristics."*
+Section 2: Medallion Lakehouse Pipeline & Data Quality SLAs
+Narrative Goal
+Explain the robust data engineering pipeline under the hood, demonstrating how raw JSON events are ingested, verified against quality standards, and promoted to analytical layers.
+Walkthrough Steps
+Go to the "Operations Console".
+Show the live Kafka-style Event Bus streaming real-time carrier telemetry (activations, portings, profile updates).
+Point to the Ingestion Statistics showing the current row count for each ingestion stream.
+Go to the "Data Platform" tab.
+Explain the Medallion Architecture:
+Bronze (Raw): Captures events in raw JSON format to maintain complete audit records.
+Silver (Conformed): Enforces schema validations, isolates bad payloads, and normalizes headers.
+Gold (Aggregated): Compiles metrics (MSISDN age, device churn counts) for downstream OLAP queries.
+Go to the "Data Quality Monitor" tab.
+Show the SLA Metrics Panel with real-time pass rates, promote counts, and live ingestion latency (targeting $< 10$ seconds).
+Highlight the SLA Rules Audit Ledger, showcasing strict constraints on data types, E.164 formats, and referential integrity.
+Trigger the Self-Healing simulator: Click the "Run Automated Healing Reconciler" button. Explain how the pipeline automatically identifies quarantined records, corrects missing headers using CDC lookup caches, and promotes them back to the Silver layer in real time.
+> Demo Script Quote:
+> *"Data lakehouse performance depends on data quality. EnStream implements a strict Apache Iceberg Medallion pipeline. We stream raw events to Bronze, validate them against our SLA Rules Ledger, and quarantine any outliers. If a carrier sends a record missing network routing headers, our pipeline self-heals by querying the CDC cache and automatically re-ingesting the corrected record without developer intervention."*
+Section 3: Forensic Query Investigator
+Narrative Goal
+Demonstrate how the platform enables deep-dive forensic audits of complex fraud scenarios, such as hardware-sharing fraud rings and historic subscriber state changes.
+Walkthrough Steps
+Navigate to the "Query Investigator" tab.
+Select a scenario from the sidebar catalog:
+Click the "SIM Swap Victim / Looper" (`14165559001`) preset.
+Show how the lookup immediately resolves carrier details, registration dates, and parses the handset TAC code to identify the exact device model (e.g., Apple iPhone 15).
+Reveal the Hardware-Sharing Bipartite Graph:
+Scroll down to the network visualizer. Explain that the graph links MSISDNs (phone accounts) and IMEIs (devices).
+Highlight the red nodes/edges. Point out how this visualizes a Fraud Ring where one device IMEI is being shared across multiple phone numbers to abuse first-party credit lines.
+Demonstrate Time-Travel Chronology:
+Go to the Iceberg Time-Travel Snapshot Explorer.
+Show the commit ledger. Click different commits to show how the subscriber's feature attributes and trust scores evolved over time with each network event.
+> Demo Script Quote:
+> *"When a fraud ring attacks, they don't use a single phone number. They swap SIMs across multiple accounts using a small stash of burners. By looking at this bipartite network graph, an investigator can immediately spot that three different phone numbers have registered on this exact iPhone IMEI. Using our Iceberg Time-Travel explorer, we can rewind the clock to see the exact sequence of events leading up to the fraud event."*
+Section 4: Cross-Sector Bad Actor Data Exchange MVP
+Narrative Goal
+Showcase the core MVP capabilities of the Cross-Sector Bad Actor Data Exchange Hub, enabling banks and carriers to securely share, query, and govern confirmed fraud records.
+Walkthrough Steps
+Go to the "Exchange Hub" tab.
+Step 1: Data Contribution (SFTP/S3 Ingestion)
+Fill out the form. Select `TD_BANK` as the participant.
+Set the phone number to an invalid format (e.g., `555-0100` instead of E.164) and select "Invalid Taxonomy Code" as the fraud type.
+Click "Submit". Show the Ingestion Engine Feedback Trace catching the error and quarantining the file with format violation messages.
+Correct the inputs (e.g., phone: `+14165550200`, type: `synthetic_id`) and submit again. Show the engine validation passing and conforming the record.
+Step 2: Real-Time API Lookup
+Click the 2. Real-Time Lookup sub-tab.
+Enter `+14165551234` and select `RBC_BANK` as the querying participant.
+Click "Execute API Lookup Query".
+Watch the Tracer Animation step through MNO activation checks and TransUnion porting verification.
+Review the response: Show how it flags a Mismatch Warning (IMEI Mismatch) and identifies that the phone number is marked as `RECYCLED` (since the fraud event occurred under a previous owner, protecting the new subscriber from false positives).
+Print the structured JSON response payload.
+Step 3: Audit & Governance (RBAC & GDPR)
+Click the 3. Audit & Governance sub-tab.
+Highlight the Immutable Audit Logs Ledger tracking all onboardings, submissions, and lookup history.
+Demonstrate RBAC PII Masking: In the governance panel, switch the active role from `participant_lookup` to `telco_verify_ai_service`. Show how the conformed database view immediately unmasks the raw names, emails, and address fields dynamically.
+Execute GDPR Self-Healing Update: Copy a conformed record UUID, select `withdrawn` as the updated status, and click "Execute Status Update". Show how the PII fields for that record are instantly purged and replaced with `<purged>` to satisfy PIPEDA/GDPR compliance.
+Step 4: Success Metrics
+Click the 4. Success Metrics sub-tab.
+Show the KPIs: 82.4% Repeat Fraud Reduction and charts demonstrating cross-sector match contributions.
+> Demo Script Quote:
+> *"The Exchange Hub is our cross-sector bad actor clearinghouse. In Step 1, TD Bank uploads confirmed fraud cases—which must adhere to strict E.164 and taxonomy checks. In Step 2, RBC queries a phone number. Notice the system warns the bank that the number has been recycled by the MNO since the fraud event, preventing a false positive. In Step 3, we enforce privacy: lookup analysts see redacted fields, while authorized services see unmasked values. If a customer disputes a flag, we mark it cleared, and our system instantly purges the PII to meet GDPR compliance."*
+Section 5: Closed-Loop Model Governance & Drift Management
+Narrative Goal
+Demonstrate how the machine learning models backing the scoring engine are monitored for drift, trained, and promoted in a controlled MLOps registry.
+Walkthrough Steps
+Navigate to the "ML Platform" tab.
+Review the Model Registry:
+Point out the Champion model (v1.0.0) and the Challenger model (v1.1.0).
+Discuss Data Drift Alerts:
+Point to the Drift Metrics panel showing the Population Stability Index (PSI) score.
+Explain how feature drift triggers alerts if carrier behaviors change (e.g., a sudden increase in porting frequency due to a new promo).
+Promote the Challenger Model:
+Click the "Promote to Champion" button next to `v1.1.0`.
+Explain that promoting a model automatically sets off a background job that recomputes features and scores for all active entities using the new model weights, updating the live dashboard trust scores instantly.
+> Demo Script Quote:
+> *"A fraud model is only as good as its training data. Our ML Console monitors feature drift in real-time. Here, our Challenger model v1.1.0 has higher AUC and F1 scores. When I promote it to Champion, EnStream automatically sets a dirty flag on all active accounts and triggers a selective recompute. Within seconds, every trust score on the platform is updated using the new champion weights."*
+Section 6: Conclusion
+Key Takeaways for Presenters to Emphasize
+Unified Multi-Carrier View: Breaking down silos between Rogers, Bell, and Telus.
+Lakehouse Data Engineering: Building on Apache Iceberg, S3, and automated self-healing quality checks.
+Cross-Sector Exchange (Pillar 2/3): Fully realized MVP solving data compliance, recycle checking, and secure cross-industry queries.
+Production-Ready ML Lifecycle: Automated drift detection and champion/challenger governance.

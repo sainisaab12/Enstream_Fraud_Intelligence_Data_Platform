@@ -1,0 +1,6 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_OTHER",
+  "summary":  "Fix image paths in design_document.md to use absolute paths in the artifact directory",
+  "updatedAt":  "2026-06-17T08:25:07.075658Z",
+  "userFacing":  true
+}

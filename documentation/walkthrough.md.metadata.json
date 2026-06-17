@@ -1,0 +1,5 @@
+{
+  "artifactType":  "ARTIFACT_TYPE_WALKTHROUGH",
+  "summary":  "Update absolute image paths in walkthrough.md to fix validation warnings.",
+  "updatedAt":  "2026-06-15T13:17:18.063851300Z"
+}

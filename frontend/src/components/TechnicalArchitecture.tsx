@@ -27,6 +27,39 @@ export default function TechnicalArchitecture() {
   const [sandboxTrace, setSandboxTrace] = useState<string[]>([]);
   const [editableReq, setEditableReq] = useState<string>("");
 
+  // Caching states
+  const [cacheMode, setCacheMode] = useState<"hit" | "dirty_bypass" | "miss">("hit");
+  const [simulatedLatency, setSimulatedLatency] = useState<number | null>(null);
+  const [simulatedCacheStatus, setSimulatedCacheStatus] = useState<string | null>(null);
+  const [cacheStats, setCacheStats] = useState({
+    hitRatio: 98.7,
+    avgLatency: 6.4,
+    peakQps: 540,
+    activeKeys: 24105,
+    evictions: 2.1
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCacheStats(prev => {
+        const deltaRatio = (Math.random() - 0.5) * 0.1;
+        const deltaLatency = (Math.random() - 0.5) * 0.2;
+        const deltaQps = Math.floor((Math.random() - 0.5) * 20);
+        const deltaKeys = Math.floor((Math.random() - 0.5) * 5);
+        const deltaEvictions = (Math.random() - 0.5) * 0.2;
+
+        return {
+          hitRatio: Math.min(100, Math.max(90, parseFloat((prev.hitRatio + deltaRatio).toFixed(2)))),
+          avgLatency: Math.max(1, parseFloat((prev.avgLatency + deltaLatency).toFixed(2))),
+          peakQps: Math.max(100, prev.peakQps + deltaQps),
+          activeKeys: Math.max(1000, prev.activeKeys + deltaKeys),
+          evictions: Math.max(0, parseFloat((prev.evictions + deltaEvictions).toFixed(2)))
+        };
+      });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
   const msisdnPresets = [
     { label: "14165559001 (SIM Swapper / Rogers)", value: "14165559001" },
     { label: "14165559013 (Fraud Ring Node / Telus)", value: "14165559013" },
@@ -287,7 +320,28 @@ export default function TechnicalArchitecture() {
     setSandboxLoading(true);
     setSandboxResponse(null);
     setSandboxHttpCode(null);
+    setSimulatedLatency(null);
+    setSimulatedCacheStatus(null);
     
+    // Determine simulated response time and status based on cacheMode
+    let trueLatency = 0;
+    let cacheStatusBadge = "";
+    let timeoutMs = 1200;
+
+    if (cacheMode === "hit") {
+      trueLatency = parseFloat((3.2 + Math.random() * 4.6).toFixed(1));
+      cacheStatusBadge = "HIT (Redis)";
+      timeoutMs = 300; // fast loading spinner for cache hit
+    } else if (cacheMode === "dirty_bypass") {
+      trueLatency = parseFloat((42.0 + Math.random() * 35.0).toFixed(1));
+      cacheStatusBadge = "BYPASS (Dirty Flag)";
+      timeoutMs = 600; // medium loading spinner
+    } else {
+      trueLatency = parseFloat((155.0 + Math.random() * 85.0).toFixed(1));
+      cacheStatusBadge = "MISS (Cold DB read)";
+      timeoutMs = 1000; // slow loading spinner
+    }
+
     const traceLog: string[] = [];
     traceLog.push(`[SYSTEM] Initializing API Sandboxed Client...`);
     traceLog.push(`[HEADERS] Content-Type: application/json; charset=UTF-8`);
@@ -296,6 +350,25 @@ export default function TechnicalArchitecture() {
     traceLog.push(`[HEADERS] Accept: application/json`);
     traceLog.push(`[SYSTEM] Querying Endpoint: ${apiDetails[selectedApi].path} (${apiDetails[selectedApi].section})`);
     
+    // Cache specific traces
+    if (cacheMode === "hit") {
+      traceLog.push(`[CACHE] Checking Redis cache keyspace for MSISDN query...`);
+      traceLog.push(`[CACHE] Cache HIT! Found key: msisdn_score:+14165559001`);
+      traceLog.push(`[CACHE] Retrieved pre-computed features and score in ${trueLatency}ms.`);
+    } else if (cacheMode === "dirty_bypass") {
+      traceLog.push(`[CACHE] Checking Redis cache keyspace for MSISDN query...`);
+      traceLog.push(`[CACHE] Cache BYPASS: Dirty flag raised for MSISDN (telemetry event within 2-min window).`);
+      traceLog.push(`[FEATURE STORE] Querying DynamoDB active feature store table...`);
+      traceLog.push(`[PIPELINE] Promoted features from DynamoDB & refreshed scoring weights in ${trueLatency}ms.`);
+      traceLog.push(`[CACHE] Refreshed score written back to Redis keyspace.`);
+    } else {
+      traceLog.push(`[CACHE] Checking Redis cache keyspace for MSISDN query...`);
+      traceLog.push(`[CACHE] Cache MISS: Key not found in Redis keyspace.`);
+      traceLog.push(`[DATABASE] Falling back to query conformed records in MySQL/Redshift Gold tables...`);
+      traceLog.push(`[DATABASE] Scanned 30M subscriber profiles and entity lineage in ${trueLatency}ms.`);
+      traceLog.push(`[CACHE] Populating Redis keyspace for future lookups.`);
+    }
+
     if (useJose) {
       traceLog.push(`[JOSE] Encrypting request payload using JWE/JWS RFC7515/7516 framework...`);
       traceLog.push(`[JOSE] Generated RS256 Signature using client RSA-2048 private key.`);
@@ -541,9 +614,11 @@ export default function TechnicalArchitecture() {
 
       setSandboxResponse(respObj);
       setSandboxHttpCode(httpCode);
+      setSimulatedLatency(trueLatency);
+      setSimulatedCacheStatus(cacheStatusBadge);
       setSandboxTrace(traceLog);
       setSandboxLoading(false);
-    }, 1200);
+    }, timeoutMs);
   };
 
   useEffect(() => {
@@ -1211,6 +1286,136 @@ export default function TechnicalArchitecture() {
                   </div>
                 )}
                           </div>
+            </div>
+            {/* Live Cache & Latency Performance Monitor */}
+            <div className="md:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center">
+                    <Cpu className="w-4 h-4 mr-1.5 text-amber-500 animate-pulse" />
+                    Low-Latency Cache & Performance Simulation Monitor
+                  </h4>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Real-time simulation of point-lookup pathways and Redis caching layers.
+                  </p>
+                </div>
+                
+                {/* Cache Mode Selector */}
+                <div className="bg-slate-950 p-0.5 rounded-lg border border-slate-850 flex space-x-1">
+                  <button
+                    onClick={() => setCacheMode("hit")}
+                    className={`px-2 py-1 text-[9.5px] font-bold rounded transition-all ${
+                      cacheMode === "hit"
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "text-slate-400 border border-transparent hover:text-slate-350"
+                    }`}
+                  >
+                    Auto (Redis Hit)
+                  </button>
+                  <button
+                    onClick={() => setCacheMode("dirty_bypass")}
+                    className={`px-2 py-1 text-[9.5px] font-bold rounded transition-all ${
+                      cacheMode === "dirty_bypass"
+                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                        : "text-slate-400 border border-transparent hover:text-slate-350"
+                    }`}
+                  >
+                    Bypass (Dirty Flag)
+                  </button>
+                  <button
+                    onClick={() => setCacheMode("miss")}
+                    className={`px-2 py-1 text-[9.5px] font-bold rounded transition-all ${
+                      cacheMode === "miss"
+                        ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                        : "text-slate-400 border border-transparent hover:text-slate-350"
+                    }`}
+                  >
+                    Cold DB Fallback
+                  </button>
+                </div>
+              </div>
+
+              {/* Latency Meter & Stats columns */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                {/* Latency meter */}
+                <div className="md:col-span-5 bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3 flex flex-col justify-center h-full">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-sans font-bold flex items-center">
+                      <Clock className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
+                      Query Latency
+                    </span>
+                    <span className="font-mono text-slate-500 text-[10px]">Target: &lt; 100ms</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-end">
+                      <span className="text-xl font-bold font-mono tracking-tight text-slate-100">
+                        {simulatedLatency !== null ? `${simulatedLatency} ms` : "-- ms"}
+                      </span>
+                      {simulatedCacheStatus && (
+                        <span className={`px-2 py-0.5 rounded-[4px] font-mono text-[9px] font-bold ${
+                          simulatedCacheStatus.includes("HIT") 
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" 
+                            : simulatedCacheStatus.includes("BYPASS")
+                            ? "bg-amber-500/15 text-amber-400 border border-amber-500/20 animate-pulse"
+                            : "bg-rose-500/15 text-rose-400 border border-rose-500/20"
+                        }`}>
+                          {simulatedCacheStatus}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Progress Bar Gauge */}
+                    <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-850 relative">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          simulatedLatency === null 
+                            ? "w-0" 
+                            : simulatedLatency < 10 
+                            ? "bg-emerald-500 w-[8%]" 
+                            : simulatedLatency < 100 
+                            ? "bg-amber-500 w-[45%]" 
+                            : "bg-rose-500 w-[92%]"
+                        }`}
+                      />
+                    </div>
+                    
+                    <div className="flex justify-between text-[8.5px] text-slate-600 font-mono">
+                      <span>0ms</span>
+                      <span>10ms (SLA Peak)</span>
+                      <span>100ms (Max SLA)</span>
+                      <span>250ms+</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simulated Caching Metrics */}
+                <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-850 space-y-1">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block font-sans">Cache Hit Ratio</span>
+                    <span className="text-sm font-bold font-mono text-emerald-400">{cacheStats.hitRatio}%</span>
+                    <span className="text-[8px] text-slate-500 block">Target &gt; 98.0%</span>
+                  </div>
+
+                  <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-850 space-y-1">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block font-sans">Avg Cache Latency</span>
+                    <span className="text-sm font-bold font-mono text-blue-400">{cacheStats.avgLatency} ms</span>
+                    <span className="text-[8px] text-slate-500 block">In-Memory Redis</span>
+                  </div>
+
+                  <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-850 space-y-1">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block font-sans">Peak Throughput</span>
+                    <span className="text-sm font-bold font-mono text-amber-500">{cacheStats.peakQps} QPS</span>
+                    <span className="text-[8px] text-slate-500 block">Target: 500 QPS</span>
+                  </div>
+
+                  <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-850 space-y-1">
+                    <span className="text-[8.5px] font-bold text-slate-500 uppercase block font-sans">Keyspace Size</span>
+                    <span className="text-sm font-bold font-mono text-slate-300">{cacheStats.activeKeys.toLocaleString()}</span>
+                    <span className="text-[8px] text-slate-500 block">Active Profiles</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

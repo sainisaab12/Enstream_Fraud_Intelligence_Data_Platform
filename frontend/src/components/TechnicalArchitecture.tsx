@@ -49,13 +49,13 @@ export default function TechnicalArchitecture() {
       desc: "Detailed comparison of name/address relative to conformed carrier records.",
       reqSchema: JSON.stringify({
         serviceProviderId: "sp_partnerId01",
-        requestId: "req_555f269a-4992-454d-bbe4",
+        requestId: "req_a1_555f269a",
         msisdn: "+14165559001",
         consentGranted: true,
         matchingStrategies: ["exact"],
         inputData: {
-          firstName: "Simulated",
-          lastName: "Rogers",
+          firstName: "John",
+          lastName: "Doe",
           streetNumber: "123",
           streetName: "Spadina Ave",
           city: "Toronto",
@@ -69,10 +69,22 @@ export default function TechnicalArchitecture() {
       name: "A2: Account Status API",
       path: "/api/rest/service/v1/accountStatus",
       section: "Section 9.2, Page 20",
-      desc: "Retrieves account status (Active, Inactive, Suspended) on network operators.",
+      desc: "Retrieves account status (Active, Suspended, Restricted) on network operators.",
       reqSchema: JSON.stringify({
         serviceProviderId: "sp_partnerId01",
         requestId: "req_a2_9921bc34",
+        msisdn: "+14165559001",
+        consentGranted: true
+      }, null, 2)
+    },
+    A3: {
+      name: "A3: Account Type API",
+      path: "/api/rest/service/v1/accountType",
+      section: "Section 9.3, Page 22",
+      desc: "Retrieves subscriber account type (Prepaid, Postpaid, Unknown), class (Consumer, Business), brand preference, and preference language.",
+      reqSchema: JSON.stringify({
+        serviceProviderId: "sp_partnerId01",
+        requestId: "req_a3_7736cd31",
         msisdn: "+14165559001",
         consentGranted: true
       }, null, 2)
@@ -91,9 +103,9 @@ export default function TechnicalArchitecture() {
     },
     A5: {
       name: "A5: Enhanced Identity Verification (IDV) API",
-      path: "/api/rest/service/v1/enhancedDataMatching",
+      path: "/api/rest/service/v1/detailedIdentityVerification",
       section: "Section 9.5, Page 27",
-      desc: "Advanced matching details returning deep name and address verification matrices.",
+      desc: "Advanced matching details returning deep name, address, and date of birth verification matrices.",
       reqSchema: JSON.stringify({
         serviceProviderId: "sp_partnerId01",
         requestId: "req_a5_f448123e",
@@ -101,9 +113,9 @@ export default function TechnicalArchitecture() {
         consentGranted: true,
         matchingStrategies: ["levenshtein"],
         inputData: {
-          firstName: "Simulated",
+          firstName: "John",
           middleName: "Rogers",
-          lastName: "Rogers",
+          lastName: "Doe",
           streetNumber: "123",
           streetName: "Spadina Ave",
           city: "Toronto",
@@ -113,9 +125,65 @@ export default function TechnicalArchitecture() {
         }
       }, null, 2)
     },
+    A6: {
+      name: "A6: Enhanced IDV Change API",
+      path: "/api/rest/service/v1/checkIdentityDataChange",
+      section: "Section 9.6, Page 36",
+      desc: "Identifies if any conformed subscriber info has changed since the last A5 verification using Subscriber ID.",
+      reqSchema: JSON.stringify({
+        serviceProviderId: "sp_partnerId01",
+        requestId: "req_a6_9921bc34",
+        msisdn: "+14165559001",
+        subscriberId: "sub_9001_8829",
+        consentGranted: true
+      }, null, 2)
+    },
+    D1_V1: {
+      name: "D1 (Stage 1 - V1): Header Injection (Deprecated)",
+      path: "/api/rest/service/v1/headerInjection",
+      section: "Section 10.1.1, Page 40",
+      desc: "Queries injected header token from mobile browser data session (returning XML subscriber details).",
+      reqSchema: JSON.stringify({
+        userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+        networkAccess: "mobile_data"
+      }, null, 2)
+    },
+    D1_V2: {
+      name: "D1 (Stage 1 - V2): Header Injection (Redirect)",
+      path: "/api/rest/service/v1/headerInjection-v2",
+      section: "Section 10.1.2, Page 44",
+      desc: "Performs HTTP redirect flow on mobile device to capture injected MNO token.",
+      reqSchema: JSON.stringify({
+        redirectUri: "https://partner-redirect-endpoint.com/callback"
+      }, null, 2)
+    },
+    D1_Retrieval: {
+      name: "D1 (Stage 2): Retrieve MSISDN API",
+      path: "/api/rest/service/v2/msisdnRetrieval",
+      section: "Section 10.1.3, Page 46",
+      desc: "Exchanges one-time discovery token captured from Header Injection to retrieve actual subscriber MSISDN.",
+      reqSchema: JSON.stringify({
+        serviceProviderId: "sp_partnerId01",
+        requestId: "req_d1_ret_8892",
+        token: "tok_00017919534700x00306E27",
+        consentGranted: true
+      }, null, 2)
+    },
+    D2: {
+      name: "D2: Device Information API",
+      path: "/api/rest/service/v1/deviceInformation",
+      section: "Section 10.2, Page 49",
+      desc: "Retrieves device IMEI, manufacturer make, and handset model currently associated with subscriber.",
+      reqSchema: JSON.stringify({
+        serviceProviderId: "sp_partnerId01",
+        requestId: "req_d2_8890cf",
+        msisdn: "+14165559001",
+        consentGranted: true
+      }, null, 2)
+    },
     D3: {
       name: "D3: Recent Service Changes API",
-      path: "/api/rest/service/v1/recentChanges",
+      path: "/api/rest/service/v2/recentServiceChange",
       section: "Section 10.3, Page 51",
       desc: "Identifies carrier status changes, SIM swaps, or porting updates within the last N days.",
       reqSchema: JSON.stringify({
@@ -126,9 +194,22 @@ export default function TechnicalArchitecture() {
         lookbackDays: 7
       }, null, 2)
     },
+    D3M: {
+      name: "D3M: Recent Service Changes API (Multi)",
+      path: "/api/rest/service/v2/recentServiceChangeMulti",
+      section: "Section 10.4, Page 64",
+      desc: "Batch query of recent service changes (SIM swap, device change, status) for up to 5 MSISDNs in a single request.",
+      reqSchema: JSON.stringify({
+        serviceProviderId: "sp_partnerId01",
+        requestId: "req_d3m_11029c",
+        msisdns: ["+14165559001", "+14165559002"],
+        consentGranted: true,
+        lookbackDays: 15
+      }, null, 2)
+    },
     D4: {
       name: "D4: Account Integrity API",
-      path: "/api/rest/service/v1/accountIntegrity",
+      path: "/api/rest/service/v2/accountIntegrityIndex",
       section: "Section 10.5, Page 70",
       desc: "Traverses device IMEI switches and flags high-churn hardware/SIM fraud risks.",
       reqSchema: JSON.stringify({
@@ -138,15 +219,27 @@ export default function TechnicalArchitecture() {
         consentGranted: true
       }, null, 2)
     },
+    D5: {
+      name: "D5: Mobile Token API",
+      path: "/api/rest/service/v1/getMobileToken",
+      section: "Section 10.6, Page 83",
+      desc: "Generates secure mobile verification token from one-time discovery credentials.",
+      reqSchema: JSON.stringify({
+        serviceProviderId: "sp_partnerId01",
+        requestId: "req_d5_22919aa",
+        token: "tok_00017919534700x00306E27"
+      }, null, 2)
+    },
     D6: {
       name: "D6: Mobile Number Verify API",
-      path: "/api/rest/service/v1/verifyMsisdn",
+      path: "/api/rest/service/v1/msisdnVerification",
       section: "Section 10.7, Page 85",
       desc: "Verifies matching subscriber possession of phone number using carrier network indicators.",
       reqSchema: JSON.stringify({
         serviceProviderId: "sp_partnerId01",
         requestId: "req_d6_00192bc5",
-        msisdn: "+14165559001",
+        msisdnVerify: "+14165559001",
+        token: "tok_00017919534700x00306E27",
         consentGranted: true
       }, null, 2)
     }
@@ -199,27 +292,33 @@ export default function TechnicalArchitecture() {
     traceLog.push(`[SYSTEM] Initializing API Sandboxed Client...`);
     traceLog.push(`[HEADERS] Content-Type: application/json; charset=UTF-8`);
     traceLog.push(`[HEADERS] Authorization: Basic c3BfcGFydG5lcklkMDE6cGFzc3dvcmQ= (Base64 partnerID:password)`);
+    traceLog.push(`[HEADERS] User-Agent: Jakarta Commons-HttpClient/3.1`);
+    traceLog.push(`[HEADERS] Accept: application/json`);
     traceLog.push(`[SYSTEM] Querying Endpoint: ${apiDetails[selectedApi].path} (${apiDetails[selectedApi].section})`);
     
     if (useJose) {
       traceLog.push(`[JOSE] Encrypting request payload using JWE/JWS RFC7515/7516 framework...`);
       traceLog.push(`[JOSE] Generated RS256 Signature using client RSA-2048 private key.`);
       traceLog.push(`[JOSE] Encrypted payload using RSA-OAEP with SHA-256 and AES-256-GCM.`);
-      traceLog.push(`[WIRE PAYLOAD] POST /v1/service HTTP/1.1`);
+      traceLog.push(`[WIRE PAYLOAD] POST ${apiDetails[selectedApi].path} HTTP/1.1`);
       
       const headerObj = {
         alg: "RS256",
         kid: "pub_sp_partnerId01",
-        expires: "06/17/2026 18:00:00",
-        operation: selectedApi === "A1" ? "A1_DATA_MATCHING" : selectedApi === "A2" ? "A2_ACCOUNT_STATUS" : "D3_RECENT_CHANGES"
+        expires: "06/17/2026 18:00:00 GMT",
+        operation: `${selectedApi}_SERVICE`
       };
-      traceLog.push(`[WIRE PAYLOAD] Token Header: ${JSON.stringify(headerObj)}`);
+      traceLog.push(`[WIRE PAYLOAD] Protected JWS Header: ${JSON.stringify(headerObj)}`);
       
       const dummyToken = `eyJhbGciOiJSUzI1NiIsImtpZCI6InB1Yl9zcF9wYXJ0bmVySWQwMSIsImV4cGlyZXMiOiIwNi8xNy8yMDI2IDE4OjAwOjAwIiwib3BlcmF0aW9uIjoi${selectedApi}_SERVICE"}.eyJyZXF1ZXN0SWQiOiJyZXFfMTIzNDU2IiwidG9rZW4iOiJlbnN0cmVhbS1wcm90b2NvbCJ9.${Math.random().toString(36).substring(7)}`;
-      traceLog.push(`[WIRE PAYLOAD] Token Body (JWE Encrypted Envelope): ${dummyToken.substring(0, 45)}...`);
+      traceLog.push(`[WIRE PAYLOAD] JWE Encrypted Body (AES-GCM Envelope): ${dummyToken.substring(0, 45)}...`);
     } else {
-      traceLog.push(`[SYSTEM] Client running over whitelisted Partner VPN tunnel.`);
-      traceLog.push(`[WIRE PAYLOAD] POST Body: ${JSON.stringify(JSON.parse(editableReq), null, 2)}`);
+      traceLog.push(`[SYSTEM] Client running over secure Partner VPN tunnel.`);
+      try {
+        traceLog.push(`[WIRE PAYLOAD] POST Body: ${JSON.stringify(JSON.parse(editableReq), null, 2)}`);
+      } catch (e) {
+        traceLog.push(`[WIRE PAYLOAD] POST Body: ${editableReq}`);
+      }
     }
 
     setTimeout(() => {
@@ -240,8 +339,7 @@ export default function TechnicalArchitecture() {
               city: ["100"],
               province: ["100"],
               postalCode: ["100"],
-              country: ["100"],
-              dob: ["100"]
+              country: ["100"]
             }
           };
         } else if (selectedApi === "A2") {
@@ -251,6 +349,17 @@ export default function TechnicalArchitecture() {
             accountStatus: "ACTIVE",
             mnoCarrier: "ROGERS",
             recycledStatus: "OWNED"
+          };
+        } else if (selectedApi === "A3") {
+          respObj = {
+            responseCode: 0,
+            responseMessage: "Success",
+            accountType: "postpaid",
+            accountClass: "consumer",
+            accountUser: "primary",
+            mnoBrand: "Rogers",
+            mnoSubBrand: "FIDO",
+            languagePreference: "en"
           };
         } else if (selectedApi === "A4") {
           respObj = {
@@ -263,12 +372,49 @@ export default function TechnicalArchitecture() {
           respObj = {
             responseCode: 0,
             responseMessage: "Success",
+            confidenceScore: 95,
             outputData: {
-              firstName: ["85"], // levenshtein partial match
+              firstName: ["85"],
+              middleName: ["100"],
               lastName: ["100"],
               streetNumber: ["100"],
+              streetName: ["100"],
+              city: ["100"],
+              province: ["100"],
+              postalCode: ["100"],
               dob: ["100"]
             }
+          };
+        } else if (selectedApi === "A6") {
+          respObj = {
+            responseCode: 0,
+            responseMessage: "Success",
+            nameChanged: false,
+            addressChanged: true,
+            dobChanged: false,
+            statusChanged: false,
+            typeChanged: false
+          };
+        } else if (selectedApi === "D1_V1") {
+          respObj = `<?xml version="1.0"?>\n<subscriber>\n  <subId2>00017919534700x00306E274C171066775037344-023X</subId2>\n  <eamLanguage>E</eamLanguage>\n  <accountSubType>I</accountSubType>\n</subscriber>`;
+        } else if (selectedApi === "D1_V2") {
+          httpCode = 307;
+          respObj = {
+            status: 307,
+            redirect_uri: "https://partner-redirect-endpoint.com/callback?token=tok_00017919534700x00306E27"
+          };
+        } else if (selectedApi === "D1_Retrieval") {
+          respObj = {
+            responseCode: 0,
+            msisdn: "+14165559001"
+          };
+        } else if (selectedApi === "D2") {
+          respObj = {
+            responseCode: 0,
+            responseMessage: "Success",
+            deviceMake: "Apple",
+            deviceModel: "iPhone 15 Pro",
+            imei: "358872091122334"
           };
         } else if (selectedApi === "D3") {
           respObj = {
@@ -279,41 +425,89 @@ export default function TechnicalArchitecture() {
             lastSimSwapTimestamp: 0,
             lineType: "MOBILE"
           };
+        } else if (selectedApi === "D3M") {
+          respObj = {
+            responseCode: 0,
+            responseMessage: "Success",
+            results: [
+              {
+                msisdn: "+14165559001",
+                responseCode: 0,
+                simChanged: false,
+                deviceChanged: false,
+                numberChanged: false,
+                nameChanged: false,
+                addressChanged: false,
+                statusChanged: false
+              },
+              {
+                msisdn: "+14165559002",
+                responseCode: 0,
+                simChanged: true,
+                simChangeDate: "06/15/2026",
+                deviceChanged: false,
+                numberChanged: false,
+                nameChanged: false,
+                addressChanged: false,
+                statusChanged: false
+              }
+            ]
+          };
         } else if (selectedApi === "D4") {
           respObj = {
             responseCode: 0,
             responseMessage: "Success",
-            integrityScore: 98,
-            deviceChurnCount: 0,
-            linkedMsisdnsCount: 1,
-            imeiStatus: "CLEAN"
+            integrityIndex: 98,
+            tenureDays: 540,
+            callFreq: "MEDIUM",
+            terminationStatus: "ACTIVE"
+          };
+        } else if (selectedApi === "D5") {
+          respObj = {
+            responseCode: 0,
+            responseMessage: "Success",
+            mobileToken: "m_tok_88219cff7812003c"
           };
         } else {
           respObj = {
             responseCode: 0,
             responseMessage: "Success",
-            numberVerified: true
+            msisdnVerified: true
           };
         }
-        traceLog.push(`[MNO NETWORK] Carrier database match found.`);
+        traceLog.push(`[MNO NETWORK] Carrier database lookup resolved successfully.`);
         traceLog.push(`[JOSE] Decrypting signed response payload...`);
         traceLog.push(`[JOSE] Verified JWS signature matches EnStream public key.`);
       } else if (sandboxScenario === "recycled") {
         httpCode = 200;
-        respObj = {
-          responseCode: 0,
-          responseMessage: "Success",
-          outputData: {
-            firstName: ["-102"], // operator name is empty/null compared to client name
-            lastName: ["-102"],
-            postalCode: ["-102"]
-          },
-          recycled_status: {
-            record_fraud_timestamp: "2026-05-10T14:30:00Z",
-            recycle_check_timestamp: "2026-06-17T08:30:00Z",
-            recycle_status: "RECYCLED"
-          }
-        };
+        if (selectedApi === "A1" || selectedApi === "A5") {
+          respObj = {
+            responseCode: 0,
+            responseMessage: "Success",
+            outputData: {
+              firstName: ["-102"],
+              lastName: ["-102"],
+              streetNumber: ["-102"],
+              postalCode: ["-102"]
+            }
+          };
+        } else if (selectedApi === "A2") {
+          respObj = {
+            responseCode: 0,
+            responseMessage: "Success",
+            accountStatus: "ACTIVE",
+            mnoCarrier: "ROGERS",
+            recycledStatus: "RECYCLED"
+          };
+        } else {
+          respObj = {
+            responseCode: 0,
+            responseMessage: "Success",
+            recycleDetected: true,
+            status: "RECYCLED",
+            recycleCheckTimestamp: "2026-06-17T08:30:00Z"
+          };
+        }
         traceLog.push(`[MNO NETWORK] Recycled checks triggered: Subscriber details changed on carrier logs since blacklist hit.`);
       } else if (sandboxScenario === "blocked") {
         httpCode = 200;
@@ -321,28 +515,28 @@ export default function TechnicalArchitecture() {
           responseCode: 7,
           responseMessage: "Blocked Number"
         };
-        traceLog.push(`[MNO NETWORK] Request blocked: Corporate account restrictions or user block list.`);
+        traceLog.push(`[MNO NETWORK] Request blocked: Corporate account restrictions or user block list (Code 7).`);
       } else if (sandboxScenario === "missing_field") {
         httpCode = 400;
         respObj = {
           responseCode: 3,
           responseMessage: "Field msisdn is required."
         };
-        traceLog.push(`[VALIDATION] Request rejected: missing mandatory keys.`);
+        traceLog.push(`[VALIDATION] Request rejected: missing mandatory keys (Code 3).`);
       } else if (sandboxScenario === "expired_token") {
         httpCode = 400;
         respObj = {
-          responseCode: 400,
-          responseMessage: "Security token expired: expires timestamp exceeds current system time."
+          responseCode: 15,
+          responseMessage: "Invalid Token (either expired or non-existent)"
         };
-        traceLog.push(`[JOSE SECURITY] Cryptographic handshake failed: Token expired.`);
+        traceLog.push(`[JOSE SECURITY] Cryptographic handshake failed: Token expired or invalid signature envelope (Code 15).`);
       } else if (sandboxScenario === "unauthorized_ip") {
         httpCode = 403;
         respObj = {
           responseCode: 4,
           responseMessage: "Unauthorized IP Access"
         };
-        traceLog.push(`[SECURITY] Gateway Firewall blocked source IP.`);
+        traceLog.push(`[SECURITY] Gateway Firewall blocked source IP (Code 4).`);
       }
 
       setSandboxResponse(respObj);
@@ -970,26 +1164,53 @@ export default function TechnicalArchitecture() {
                 </div>
 
                 {sandboxResponse && (
-                  <div className="p-2.5 bg-slate-950 border border-slate-855 rounded text-[10px] text-slate-400 font-sans">
-                    <span className="font-bold text-slate-300 block mb-0.5">Response Code Explanation:</span>
-                    {sandboxResponse.responseCode === 0 && (
-                      <span>**Code 0**: Operation processed successfully. Match scores returned on 0-100 scale. Negative scores denote missing database metrics (-102 = carrier field null).</span>
+                  <div className="p-2.5 bg-slate-950 border border-slate-855 rounded text-[10px] text-slate-400 font-sans space-y-1 w-full">
+                    <span className="font-bold text-slate-350 block mb-0.5">Response Code Explanation:</span>
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 0 && (
+                      <div>**Code 0 (Success/Found)**: Record found for provided MSISDN. Match scores returned on 0-100 scale. Negative scores denote missing database metrics (-102 = operator null data).</div>
                     )}
-                    {sandboxResponse.responseCode === 3 && (
-                      <span>**Code 3**: Missing Mandatory Field. The request payload failed schema validation constraints at boundary gateway.</span>
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 1 && (
+                      <div>**Code 1 (Not Whitelisted)**: The target phone number is not whitelisted in QA/Staging environments.</div>
                     )}
-                    {sandboxResponse.responseCode === 4 && (
-                      <span>**Code 4**: Unauthorized IP Access. Request blocked: Source IP is not configured in client whitelist registry.</span>
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 2 && (
+                      <div>**Code 2 (Duplicate Request ID)**: The Request ID has been used in a prior transaction request.</div>
                     )}
-                    {sandboxResponse.responseCode === 7 && (
-                      <span>**Code 7**: Blocked Number. Subscriber matches MNO corporate restrictions or explicit line block.</span>
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 3 && (
+                      <div>**Code 3 (Missing Mandatory Field)**: Required field was omitted from request (e.g. msisdn).</div>
                     )}
-                    {sandboxResponse.responseCode === 400 && (
-                      <span>**HTTP 400 / Expired**: Handshake rejected. Expired timestamp value inside JWS protected header parameters.</span>
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 4 && (
+                      <div>**Code 4 (Unauthorized IP Access)**: The requesting source IP does not match whitelisted VPN or firewall profiles.</div>
+                    )}
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 7 && (
+                      <div>**Code 7 (Blocked Number)**: The target MSISDN has been blocked by the carrier (e.g. government line or corporate block).</div>
+                    )}
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 14 && (
+                      <div>**Code 14 (MSISDN Not Linked)**: For D6 verification, the phone number is not active on the MNO network.</div>
+                    )}
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 15 && (
+                      <div>**Code 15 (Invalid Token)**: The JWS/JWE token is expired or does not exist.</div>
+                    )}
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 16 && (
+                      <div>**Code 16 (Invalid SP ID)**: The Service Provider ID (SPID) has not been assigned for this partner.</div>
+                    )}
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 18 && (
+                      <div>**Code 18 (MNO Busy)**: Carrier integration gateway is temporarily busy or unreachable.</div>
+                    )}
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 28 && (
+                      <div>**Code 28 (No Consent)**: Consumer consent has not been properly registered for this query.</div>
+                    )}
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 400 && (
+                      <div>**Code 400 (Invalid Input)**: Invalid input data format (e.g. invalid age or more than 5 numbers in D3M).</div>
+                    )}
+                    {typeof sandboxResponse === 'object' && sandboxResponse.responseCode === 500 && (
+                      <div>**Code 500 (Internal Error)**: Native exception in the underlying carrier system.</div>
+                    )}
+                    {typeof sandboxResponse === 'string' && (
+                      <div>**XML Format**: Returns raw carrier Header Injection details (Section 10.1.1).</div>
                     )}
                   </div>
                 )}
-              </div>
+                          </div>
             </div>
           </div>
         </div>
@@ -1086,6 +1307,34 @@ export default function TechnicalArchitecture() {
           
           {/* Main specifications overview grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Real-Time Latency Caching Specs */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+              <h4 className="text-xs font-extrabold uppercase text-slate-350 tracking-wider flex items-center border-b border-slate-800 pb-2">
+                <Cpu className="w-4 h-4 mr-2 text-amber-500 animate-pulse" />
+                Low-Latency Caching Architecture
+              </h4>
+              
+              <div className="space-y-3 text-xs leading-relaxed text-slate-400">
+                <p>
+                  To support <strong>1M to 5M real-time scoring requests/day</strong> (peak ~500 QPS) and meet sub-second SLAs (&lt; 100ms) over 30M profiles, we isolate the transactional scoring pathway from the Redshift gold layer using an event-driven cache:
+                </p>
+                <div className="bg-slate-950 p-2.5 rounded border border-slate-850 space-y-2 text-[11px]">
+                  <div>
+                    <span className="font-bold text-amber-400 font-mono block">Amazon ElastiCache (Redis)</span>
+                    <span className="text-[10px] text-slate-500">In-Memory Score Cache (Latency: &lt; 10ms)</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-400 font-mono block">Amazon DynamoDB</span>
+                    <span className="text-[10px] text-slate-500">Active Feature Store (Latency: &lt; 50ms)</span>
+                  </div>
+                </div>
+                <ul className="text-[10px] text-slate-500 font-mono space-y-1 list-disc pl-4">
+                  <li><strong>Cache Hits:</strong> Queries for valid cached MSISDN scores return in &lt; 10ms.</li>
+                  <li><strong>Dirty Flag Invalidation:</strong> Telemetry arrivals raise a "dirty flag," bypassing the cache and triggering a single-entity feature refresh from DynamoDB.</li>
+                  <li><strong>OLAP Isolation:</strong> BFS graph ring traversal and Redshift queries are isolated from live user API routes.</li>
+                </ul>
+              </div>
+            </div>
             
             {/* MySQL Database & Volume Specs */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">

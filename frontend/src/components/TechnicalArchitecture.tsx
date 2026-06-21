@@ -26,9 +26,9 @@ export default function TechnicalArchitecture() {
   const [sandboxLoading, setSandboxLoading] = useState<boolean>(false);
   const [sandboxTrace, setSandboxTrace] = useState<string[]>([]);
   const [editableReq, setEditableReq] = useState<string>("");
-  const [evolutionPhase, setEvolutionPhase] = useState<number>(5);
+const [evolutionPhase, setEvolutionPhase] = useState<number>(5);
 
-  // Pipeline Builder states
+  // Pipeline Builder states (Highly Detailed)
   const [builderSource, setBuilderSource] = useState<string>("kinesis");
   const [builderPath, setBuilderPath] = useState<string>("aws.kinesis.enstream.subscriber-events");
   const [builderDqMsisdn, setBuilderDqMsisdn] = useState<boolean>(true);
@@ -44,70 +44,169 @@ export default function TechnicalArchitecture() {
   const [deploying, setDeploying] = useState<boolean>(false);
   const [builderCodeTab, setBuilderCodeTab] = useState<"dbt" | "dataform" | "flink">("dbt");
 
+  // Detailed Ingestion Connector Parameters
+  const [kinesisShards, setKinesisShards] = useState<number>(4);
+  const [kinesisRetention, setKinesisRetention] = useState<number>(24);
+  const [kinesisFormat, setKinesisFormat] = useState<string>("json");
+  const [kinesisRole, setKinesisRole] = useState<string>("arn:aws:iam::123456789012:role/EnStreamKinesisRole");
+
+  const [s3Bucket, setS3Bucket] = useState<string>("enstream-bronze-landing");
+  const [s3Format, setS3Format] = useState<string>("parquet");
+  const [s3Compression, setS3Compression] = useState<string>("snappy");
+
+  const [mysqlHost, setMysqlHost] = useState<string>("mysql.enstream-legacy.local");
+  const [mysqlDb, setMysqlDb] = useState<string>("subscriber_verifications");
+  const [mysqlTables, setMysqlTables] = useState<string>("customer_journey_events, api_verifications");
+
+  const [sftpHost, setSftpHost] = useState<string>("sftp.enstream-partners.com");
+  const [sftpUser, setSftpUser] = useState<string>("bell_verification_sftp");
+
+  // Detailed DQ Rules List (Editable)
+  const [dqRules, setDqRules] = useState<any[]>([
+    { id: 1, col: "msisdn", rule: "Regex Pattern Match", val: "^\\+1[0-9]{10}$", action: "Quarantine Record" },
+    { id: 2, col: "imei", rule: "String Length Check", val: "15", action: "Quarantine Record" },
+    { id: 3, col: "timestamp", rule: "SLA Latency Constraint", val: "< 2 hours", action: "Quarantine Record" }
+  ]);
+  const [newDqCol, setNewDqCol] = useState<string>("msisdn");
+  const [newDqRule, setNewDqRule] = useState<string>("Regex Pattern Match");
+  const [newDqVal, setNewDqVal] = useState<string>("");
+  const [newDqAction, setNewDqAction] = useState<string>("Quarantine Record");
+
+  // Detailed Aggregation Parameters
+  const [aggColumn, setAggColumn] = useState<string>("event_id");
+  const [aggOperator, setAggOperator] = useState<string>("COUNT");
+  const [windowType, setWindowType] = useState<string>("Tumbling Window");
+  const [slideStep, setSlideStep] = useState<string>("5m");
+  const [groupByCol, setGroupByCol] = useState<string>("msisdn");
+  const [destinationType, setDestinationType] = useState<string>("redshift");
+
+  const addDqRule = () => {
+    if (!newDqVal) return;
+    const nextId = dqRules.length > 0 ? Math.max(...dqRules.map(r => r.id)) + 1 : 1;
+    setDqRules([...dqRules, { id: nextId, col: newDqCol, rule: newDqRule, val: newDqVal, action: newDqAction }]);
+    setNewDqVal("");
+    setBuilderLogs(prev => [...prev, `[USER] Added DQ validation rule on column '${newDqCol}': ${newDqRule} (${newDqVal}) -> Action: ${newDqAction}`]);
+  };
+
+  const removeDqRule = (id: number) => {
+    const removedRule = dqRules.find(r => r.id === id);
+    setDqRules(dqRules.filter(r => r.id !== id));
+    if (removedRule) {
+      setBuilderLogs(prev => [...prev, `[USER] Removed DQ validation rule on column '${removedRule.col}'`]);
+    }
+  };
+
   const handleDeployPipeline = () => {
     setDeploying(true);
     setBuilderLogs(prev => [
       ...prev,
-      `[INFO] Starting deployment sequence for pipeline source '${builderSource}'...`,
-      `[COMPILE] Target endpoint schema: '${builderPath}'`,
-      `[COMPILE] Packing DQ SLA validations...`,
-      `[COMPILE] Configuring '${builderAggType}' over ${builderWindow} window (Threshold >= ${builderThreshold})...`
+      `[INFO] Initializing visual pipeline compiler for source '${builderSource.toUpperCase()}'...`,
+      builderSource === "kinesis" ? `[INFO] Stream: ${builderPath} | Shards: ${kinesisShards} | Retention: ${kinesisRetention}h | Format: ${kinesisFormat}` :
+      builderSource === "s3" ? `[INFO] Bucket: s3://${s3Bucket} | Format: ${s3Format} | Compression: ${s3Compression}` :
+      builderSource === "mysql_cdc" ? `[INFO] Host: ${mysqlHost} | DB: ${mysqlDb} | Tables: ${mysqlTables}` :
+      `[INFO] SFTP: ${sftpHost} | User: ${sftpUser} | Ingress Path: s3://${s3Bucket}`,
+      `[COMPILE] Compiling Bronze Landing Layer: 'enstream.bronze_${builderSource}'...`,
+      `[COMPILE] Validating Data Quality SLA checks against ${dqRules.length} registered constraints...`,
+      ...dqRules.map(r => `  - RULE: [${r.col}] ${r.rule} (${r.val}) -> ${r.action}`),
+      `[COMPILE] Generating Silver target Iceberg partition with schema promotion...`,
+      `[COMPILE] Generating Gold layer aggregation window using ${windowType} (${builderWindow}${windowType === "Sliding Window" ? " slide " + slideStep : ""}):`,
+      `  - Aggregation: ${aggOperator}(${aggColumn}) GROUP BY ${groupByCol} HAVING ${aggOperator}(${aggColumn}) >= ${builderThreshold}`,
+      `[COMPILE] Target Serving Destination: ${destinationType.toUpperCase()} Feature Catalog`
     ]);
 
     setTimeout(() => {
       setDeploying(false);
       setBuilderLogs(prev => [
         ...prev,
-        `[SUCCESS] Pipeline successfully compiled & registered to AWS EMR Glue Catalog!`,
-        `[SUCCESS] Ingested Bronze Partition: 'enstream.bronze_${builderSource}'`,
-        `[SUCCESS] Validated Silver Destination: 'enstream.silver_${builderSource}_validated'`,
-        `[SUCCESS] Active Redshift Gold View: 'enstream_gold.features_${builderSource}_${builderAggType}'`,
-        `[SYSTEM] AWS MWAA Scheduler triggered new DAG catalog sync.`,
-        `[SYSTEM] Flink CDC Streaming Job spawned with active state validation (RocksDB backend).`
+        `[SUCCESS] Pipeline successfully compiled & deployed!`,
+        `[SUCCESS] Active Iceberg Bronze Schema registered in AWS Glue Data Catalog.`,
+        `[SUCCESS] Active Iceberg Silver schema created with ${dqRules.length} check assertions.`,
+        `[SUCCESS] Gold Layer View 'enstream_gold.features_${builderSource}' mapped in Redshift Serverless.`,
+        `[SYSTEM] AWS MWAA DAG 'enstream_dag_${builderSource}.py' generated, uploaded to DAG S3 prefix, and successfully compiled.`,
+        `[SYSTEM] Flink CDC Streaming Job successfully spawned on EMR Cluster. Job ID: 'flink-cdc-${Math.floor(Math.random()*900000) + 100000}'`
       ]);
-    }, 1500);
+    }, 1800);
   };
 
   const generateDbtCode = () => {
+    const dqSelect = dqRules.map(r => {
+      if (r.rule === "Regex Pattern Match") {
+        return `        CASE WHEN ${r.col} IS NULL THEN FALSE WHEN NOT REGEXP_LIKE(${r.col}, '${r.val}') THEN FALSE ELSE TRUE END as check_${r.col}_format`;
+      } else if (r.rule === "String Length Check") {
+        return `        CASE WHEN ${r.col} IS NULL THEN FALSE WHEN LENGTH(${r.col}) != ${r.val} THEN FALSE ELSE TRUE END as check_${r.col}_length`;
+      } else if (r.rule === "SLA Latency Constraint") {
+        return `        CASE WHEN ${r.col} IS NULL THEN FALSE WHEN ${r.col} < DATEADD(hour, -2, GETDATE()) THEN FALSE ELSE TRUE END as check_${r.col}_sla`;
+      } else if (r.rule === "Null Value Restriction") {
+        return `        CASE WHEN ${r.col} IS NULL THEN FALSE ELSE TRUE END as check_${r.col}_not_null`;
+      } else {
+        return `        CASE WHEN ${r.col} IS NULL THEN FALSE ELSE TRUE END as check_${r.col}_assertion`;
+      }
+    }).join(",\n");
+
+    const dqWhere = dqRules.map(r => {
+      if (r.rule === "Regex Pattern Match") return `check_${r.col}_format = TRUE`;
+      if (r.rule === "String Length Check") return `check_${r.col}_length = TRUE`;
+      if (r.rule === "SLA Latency Constraint") return `check_${r.col}_sla = TRUE`;
+      return `check_${r.col}_not_null = TRUE`;
+    }).join("\n    AND ");
+
     return `{{ config(
     materialized='incremental',
     unique_key='event_id',
-    incremental_strategy='merge'
+    incremental_strategy='merge',
+    on_schema_change='sync_all_columns'
 ) }}
 
-WITH raw_events AS (
+-- Ingestion Source Configured via Visual Builder
+-- Source: ${builderSource.toUpperCase()} | Path: ${builderPath}
+WITH raw_bronze_events AS (
     SELECT * FROM {{ source('enstream_bronze', 'raw_${builderSource}') }}
+    {% if is_incremental() %}
+    WHERE ingested_at > (SELECT MAX(ingested_at) FROM {{ this }})
+    {% endif %}
 ),
 
-validated_events AS (
+validated_silver_events AS (
     SELECT 
         event_id,
         event_type,
         msisdn,
         imei,
         timestamp,
-        CASE 
-            WHEN msisdn IS NULL THEN FALSE
-            ${builderDqMsisdn ? "WHEN NOT REGEXP_LIKE(msisdn, '^\\+1[0-9]{10}$') THEN FALSE" : ""}
-            ${builderDqImei ? "WHEN LENGTH(imei) != 15 THEN FALSE" : ""}
-            ${builderDqFreshness ? "WHEN timestamp < DATEADD(hour, -2, GETDATE()) THEN FALSE" : ""}
-            ELSE TRUE
-        END as dq_passed
-    FROM raw_events
+        ingested_at,
+        -- Auto-Generated DQ Rules
+${dqSelect}
+    FROM raw_bronze_events
 )
 
-SELECT * FROM validated_events
-WHERE dq_passed = TRUE;`;
+-- Silver Layer promotion (conformed only)
+SELECT 
+    event_id,
+    event_type,
+    msisdn,
+    imei,
+    timestamp,
+    ingested_at
+FROM validated_silver_events
+WHERE 
+    ${dqWhere || "1=1"};`;
   };
 
   const generateDataformCode = () => {
+    const assertions = dqRules.map(r => {
+      if (r.rule === "Regex Pattern Match") return `  // regex constraint for ${r.col}\n  assert(regexp_like(${r.col}, '${r.val}'));`;
+      if (r.rule === "String Length Check") return `  // length constraint for ${r.col}\n  assert(length(${r.col}) = ${r.val});`;
+      return `  // null check for ${r.col}\n  assert(${r.col} is not null);`;
+    }).join("\n\n");
+
     return `config {
   type: "incremental",
   schema: "enstream_silver",
   name: "silver_events_${builderSource}",
+  description: "Conformed silver events generated by Visual Builder from ${builderSource}",
   assertions: {
     uniqueKey: ["event_id"],
-    nonNull: ["msisdn", "imei"]
+    nonNull: ["event_id", "${groupByCol}"]
   }
 }
 
@@ -120,15 +219,23 @@ SELECT
   ingested_at
 FROM 
   \${ref("bronze_${builderSource}")}
-WHERE 
-  1=1
-  ${builderDqMsisdn ? "AND REGEXP_LIKE(msisdn, '^\\+1[0-9]{10}$')" : ""}
-  ${builderDqImei ? "AND LENGTH(imei) = 15" : ""}
-  ${builderDqFreshness ? "AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 HOUR)" : ""};`;
+
+\${when(incremental(), \`WHERE ingested_at > (SELECT MAX(ingested_at) FROM \${this()})\`)}
+
+/* Auto-Generated Visual assertions */
+/* 
+${assertions}
+*/;`;
   };
 
   const generateFlinkCode = () => {
-    return `CREATE TABLE silver_events_${builderSource} (
+    const windowStart = windowType === "Tumbling Window" ? 
+      `TUMBLE_START(\`timestamp\`, INTERVAL '${builderWindow === "2h" ? "2" : builderWindow === "24h" ? "24" : "720"}' HOUR)` :
+      `HOP_START(\`timestamp\`, INTERVAL '${slideStep === "5m" ? "5' MINUTE" : "30' MINUTE"}', INTERVAL '${builderWindow === "2h" ? "2" : builderWindow === "24h" ? "24" : "720"}' HOUR)`;
+    
+    return `-- Apache Flink SQL Stateful Streaming Pipeline
+-- Auto-Generated from No-Code Interface
+CREATE TABLE bronze_source_${builderSource} (
   event_id STRING,
   event_type STRING,
   msisdn STRING,
@@ -136,26 +243,31 @@ WHERE
   \`timestamp\` TIMESTAMP(3),
   WATERMARK FOR \`timestamp\` AS \`timestamp\` - INTERVAL '5' SECOND
 ) WITH (
-  'connector' = 'kinesis',
+  'connector' = '${builderSource === "kinesis" ? "kinesis" : "kafka"}',
   'stream' = '${builderPath}',
   'aws.region' = 'us-east-1',
-  'format' = 'json'
+  'format' = '${builderSource === "kinesis" ? kinesisFormat : "json"}'
 );
 
--- Stateful rolling aggregation window
+-- Stateful rolling aggregation window (Gold View)
 CREATE VIEW gold_features_${builderSource}_${builderAggType} AS
 SELECT 
-  msisdn,
-  COUNT(event_id) as event_count,
+  ${groupByCol},
+  ${aggOperator}(${aggColumn}) as aggregate_metric,
   COUNT(DISTINCT imei) as distinct_imei_count,
-  TUMBLE_START(\`timestamp\`, INTERVAL '${builderWindow === "2h" ? "2" : builderWindow === "24h" ? "24" : "720"}' HOUR) as window_start
-FROM silver_events_${builderSource}
+  ${windowStart} as window_start
+FROM bronze_source_${builderSource}
+WHERE 
+  msisdn IS NOT NULL
+  ${builderDqImei ? "AND LENGTH(imei) = 15" : ""}
 GROUP BY 
-  msisdn, 
-  TUMBLE(\`timestamp\`, INTERVAL '${builderWindow === "2h" ? "2" : builderWindow === "24h" ? "24" : "720"}' HOUR);`;
+  ${groupByCol}, 
+  ${windowType === "Tumbling Window" ? `TUMBLE(\`timestamp\`, INTERVAL '${builderWindow === "2h" ? "2" : builderWindow === "24h" ? "24" : "720"}' HOUR)` : `HOP(\`timestamp\`, INTERVAL '${slideStep === "5m" ? "5' MINUTE" : "30' MINUTE"}', INTERVAL '${builderWindow === "2h" ? "2" : builderWindow === "24h" ? "24" : "720"}' HOUR)`}
+HAVING 
+  ${aggOperator}(${aggColumn}) >= ${builderThreshold};`;
   };
 
-  // Caching states
+  // Caching states  // Caching states
   const [cacheMode, setCacheMode] = useState<"hit" | "dirty_bypass" | "miss">("hit");
   const [simulatedLatency, setSimulatedLatency] = useState<number | null>(null);
   const [simulatedCacheStatus, setSimulatedCacheStatus] = useState<string | null>(null);
@@ -1443,8 +1555,8 @@ GROUP BY
           {/* Header Description */}
           <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-2">
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center">
-              <Layers className="h-4 w-4 text-emerald-450 mr-2" />
-              Visual No-Code Pipeline Manager & Code Generator
+              <Layers className="h-4.5 w-4.5 text-emerald-450 mr-2" />
+              Visual No-Code Pipeline Manager &amp; Code Generator
             </h3>
             <p className="text-xs text-slate-400 font-sans max-w-4xl">
               This interface allows EnStream data operators to create, manage, and scale ingestion pipelines and data quality checks without writing complex Apache Spark/Flink code. Define sources, configure DQ validation rules, select gold aggregations, and instantly generate standard **dbt models (SQL)**, **Dataform scripts (SQLX)**, or **Flink SQL streaming definitions** for deployment.
@@ -1452,13 +1564,14 @@ GROUP BY
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Hand side: Pipeline Configuration Form */}
+            {/* Left Column: Pipeline Configuration Forms */}
             <div className="lg:col-span-5 space-y-6">
+              {/* Source Settings */}
               <div className="bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
-                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">1. Ingestion Data Source</span>
-                <div className="space-y-3">
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">1. Ingestion Data Source Connector</span>
+                <div className="space-y-3 font-sans text-xs">
                   <div>
-                    <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Source Connector Type:</label>
+                    <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Source Connector Type:</label>
                     <select 
                       value={builderSource}
                       onChange={(e) => setBuilderSource(e.target.value)}
@@ -1471,7 +1584,7 @@ GROUP BY
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Stream Name / S3 URI Path:</label>
+                    <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Stream Name / S3 URI Path:</label>
                     <input 
                       type="text" 
                       value={builderPath}
@@ -1479,114 +1592,373 @@ GROUP BY
                       className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500" 
                     />
                   </div>
+
+                  {/* Dynamic fields based on source */}
+                  {builderSource === "kinesis" && (
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Shards Count:</label>
+                        <input 
+                          type="number" 
+                          value={kinesisShards}
+                          onChange={(e) => setKinesisShards(Number(e.target.value))}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Data Format:</label>
+                        <select 
+                          value={kinesisFormat}
+                          onChange={(e) => setKinesisFormat(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none"
+                        >
+                          <option value="json">JSON</option>
+                          <option value="avro">Avro</option>
+                          <option value="protobuf">Protobuf</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {builderSource === "s3" && (
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">File Format:</label>
+                        <select 
+                          value={s3Format}
+                          onChange={(e) => setS3Format(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono"
+                        >
+                          <option value="parquet">Parquet</option>
+                          <option value="csv">CSV</option>
+                          <option value="orc">ORC</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Compression:</label>
+                        <select 
+                          value={s3Compression}
+                          onChange={(e) => setS3Compression(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono"
+                        >
+                          <option value="snappy">Snappy</option>
+                          <option value="gzip">GZIP</option>
+                          <option value="none">None</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+
+                  {builderSource === "mysql_cdc" && (
+                    <div className="space-y-2 pt-1">
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-0.5 font-bold">Database Server Host:</label>
+                        <input 
+                          type="text" 
+                          value={mysqlHost}
+                          onChange={(e) => setMysqlHost(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-0.5 font-bold">Monitored Tables:</label>
+                        <input 
+                          type="text" 
+                          value={mysqlTables}
+                          onChange={(e) => setMysqlTables(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {builderSource === "sftp" && (
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">SFTP Host Address:</label>
+                        <input 
+                          type="text" 
+                          value={sftpHost}
+                          onChange={(e) => setSftpHost(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">SFTP User:</label>
+                        <input 
+                          type="text" 
+                          value={sftpUser}
+                          onChange={(e) => setSftpUser(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* DQ Rules Manager */}
               <div className="bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
-                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">2. Bronze-to-Silver Data Quality (DQ) Rules</span>
-                <div className="space-y-2">
-                  <label className="flex items-start space-x-2.5 p-2 bg-slate-900/60 border border-slate-850 rounded hover:border-slate-800 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={builderDqMsisdn} 
-                      onChange={(e) => setBuilderDqMsisdn(e.target.checked)}
-                      className="mt-0.5" 
-                    />
-                    <div className="text-[11px] font-sans">
-                      <span className="font-bold text-slate-200 block">E.164 MSISDN Format Check</span>
-                      <span className="text-slate-400">Validates regex phone formats for Bell, Rogers, and Telus (+1 Canadian prefix).</span>
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">2. Data Quality (DQ) Validation Schema Rules</span>
+                
+                {/* Active Rules List */}
+                <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                  {dqRules.map(rule => (
+                    <div key={rule.id} className="flex items-center justify-between p-2 bg-slate-900 border border-slate-850 rounded hover:border-slate-800 text-[10.5px]">
+                      <div className="font-sans space-y-0.5">
+                        <span className="font-bold text-slate-200 font-mono">Column: {rule.col}</span>
+                        <p className="text-slate-400 font-sans text-[10px]">{rule.rule} ({rule.val}) &rarr; {rule.action}</p>
+                      </div>
+                      <button 
+                        onClick={() => removeDqRule(rule.id)}
+                        className="text-[9px] px-1.5 py-0.5 bg-red-950 border border-red-900 text-red-400 rounded hover:bg-red-900 hover:text-red-200 font-mono"
+                      >
+                        Delete
+                      </button>
                     </div>
-                  </label>
+                  ))}
+                  {dqRules.length === 0 && (
+                    <div className="text-[10px] text-slate-500 font-mono italic text-center py-2">No active DQ rules defined. Raw payloads will pass unchecked.</div>
+                  )}
+                </div>
 
-                  <label className="flex items-start space-x-2.5 p-2 bg-slate-900/60 border border-slate-850 rounded hover:border-slate-800 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={builderDqImei} 
-                      onChange={(e) => setBuilderDqImei(e.target.checked)}
-                      className="mt-0.5" 
-                    />
-                    <div className="text-[11px] font-sans">
-                      <span className="font-bold text-slate-200 block">Handset IMEI 15-Digit Luhn Check</span>
-                      <span className="text-slate-400">Verifies hardware identifiers match GSMA TAC structures.</span>
+                {/* Add Rule Form */}
+                <div className="border-t border-slate-900 pt-3 space-y-2.5 font-sans text-xs">
+                  <span className="text-[9px] text-slate-450 uppercase font-bold tracking-wider block font-mono">Create New Rule Constraint:</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[8.5px] text-slate-400 block font-mono mb-0.5 font-bold">Column:</label>
+                      <select 
+                        value={newDqCol}
+                        onChange={(e) => setNewDqCol(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-200 focus:outline-none"
+                      >
+                        <option value="msisdn">msisdn (Phone)</option>
+                        <option value="imei">imei (Handset)</option>
+                        <option value="timestamp">timestamp</option>
+                        <option value="event_id">event_id</option>
+                        <option value="carrier">carrier</option>
+                      </select>
                     </div>
-                  </label>
-
-                  <label className="flex items-start space-x-2.5 p-2 bg-slate-900/60 border border-slate-850 rounded hover:border-slate-800 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={builderDqFreshness} 
-                      onChange={(e) => setBuilderDqFreshness(e.target.checked)}
-                      className="mt-0.5" 
-                    />
-                    <div className="text-[11px] font-sans">
-                      <span className="font-bold text-slate-200 block">Ingestion Freshness SLA Check</span>
-                      <span className="text-slate-400">Quarantines payloads arriving with latency &gt; 2 hours.</span>
+                    <div>
+                      <label className="text-[8.5px] text-slate-400 block font-mono mb-0.5 font-bold">Assertion Type:</label>
+                      <select 
+                        value={newDqRule}
+                        onChange={(e) => setNewDqRule(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-200 focus:outline-none"
+                      >
+                        <option value="Regex Pattern Match">Regex Pattern Match</option>
+                        <option value="String Length Check">String Length Check</option>
+                        <option value="SLA Latency Constraint">SLA Latency Constraint</option>
+                        <option value="Null Value Restriction">Null Value Restriction</option>
+                      </select>
                     </div>
-                  </label>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 items-end">
+                    <div className="col-span-2">
+                      <label className="text-[8.5px] text-slate-400 block font-mono mb-0.5 font-bold">Validation Value (e.g. ^\+1[0-9]{10}$):</label>
+                      <input 
+                        type="text" 
+                        value={newDqVal}
+                        onChange={(e) => setNewDqVal(e.target.value)}
+                        placeholder="Rule parameter value"
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] text-slate-200 font-mono focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={addDqRule}
+                      className="py-1 bg-blue-600 hover:bg-blue-500 text-slate-100 rounded text-[10px] font-bold transition-all border border-blue-500 shadow"
+                    >
+                      Add Rule
+                    </button>
+                  </div>
                 </div>
               </div>
 
+              {/* Aggregation Settings */}
               <div className="bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
                 <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">3. Silver-to-Gold Feature Aggregations</span>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Aggregation Function:</label>
-                    <select 
-                      value={builderAggType}
-                      onChange={(e) => setBuilderAggType(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
-                    >
-                      <option value="sim_swap">SIM Swap Velocity (events count within window)</option>
-                      <option value="device_churn">Device Churn (distinct IMEI per phone)</option>
-                      <option value="port_freq">Inter-Carrier Porting Frequency</option>
-                      <option value="graph_ring">Network Fraud Ring (shared device connections)</option>
-                    </select>
-                  </div>
+                <div className="space-y-3 font-sans text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Time Window:</label>
+                      <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Operator:</label>
+                      <select 
+                        value={aggOperator}
+                        onChange={(e) => setAggOperator(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
+                      >
+                        <option value="COUNT">COUNT</option>
+                        <option value="COUNT(DISTINCT)">COUNT DISTINCT</option>
+                        <option value="SUM">SUM</option>
+                        <option value="MAX">MAX</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Target Column:</label>
+                      <select 
+                        value={aggColumn}
+                        onChange={(e) => setAggColumn(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
+                      >
+                        <option value="event_id">event_id</option>
+                        <option value="imei">imei</option>
+                        <option value="msisdn">msisdn</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Window Type:</label>
+                      <select 
+                        value={windowType}
+                        onChange={(e) => setWindowType(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
+                      >
+                        <option value="Tumbling Window">Tumbling Window</option>
+                        <option value="Sliding Window">Sliding Window</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Window Duration:</label>
                       <select 
                         value={builderWindow}
                         onChange={(e) => setBuilderWindow(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
                       >
                         <option value="2h">2 Hours</option>
                         <option value="24h">24 Hours</option>
                         <option value="30d">30 Days</option>
                       </select>
                     </div>
+                  </div>
+
+                  {windowType === "Sliding Window" && (
+                    <div className="grid grid-cols-2 gap-3 pt-1 animate-fadeIn">
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Slide Interval:</label>
+                        <select 
+                          value={slideStep}
+                          onChange={(e) => setSlideStep(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
+                        >
+                          <option value="5m">5 Minutes</option>
+                          <option value="30m">30 Minutes</option>
+                          <option value="1h">1 Hour</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Group By Column:</label>
+                        <input 
+                          type="text" 
+                          value={groupByCol}
+                          onChange={(e) => setGroupByCol(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {windowType !== "Sliding Window" && (
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Group By Column:</label>
+                        <input 
+                          type="text" 
+                          value={groupByCol}
+                          onChange={(e) => setGroupByCol(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Target Threshold:</label>
+                        <input 
+                          type="number" 
+                          value={builderThreshold}
+                          onChange={(e) => setBuilderThreshold(Number(e.target.value))}
+                          className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500" 
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Target Threshold:</label>
-                      <input 
-                        type="number" 
-                        value={builderThreshold}
-                        onChange={(e) => setBuilderThreshold(Number(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500" 
-                      />
+                      <label className="text-[9.5px] text-slate-450 block font-mono mb-1 font-bold">Serving Destination:</label>
+                      <select 
+                        value={destinationType}
+                        onChange={(e) => setDestinationType(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
+                      >
+                        <option value="redshift">Redshift Serverless (Gold OLAP)</option>
+                        <option value="dynamodb">DynamoDB (Active Feature Store)</option>
+                        <option value="redis">ElastiCache Redis (Cache Lookup)</option>
+                      </select>
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        onClick={handleDeployPipeline}
+                        className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-slate-100 rounded-lg text-xs font-bold transition-all shadow-md flex items-center justify-center space-x-1 border border-emerald-500"
+                      >
+                        <Play className="h-3.5 w-3.5" />
+                        <span>Deploy Pipeline</span>
+                      </button>
                     </div>
                   </div>
-                  <button
-                    onClick={handleDeployPipeline}
-                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-slate-100 rounded-lg text-xs font-bold transition-all shadow-md mt-2 flex items-center justify-center space-x-1.5"
-                  >
-                    <Play className="h-3.5 w-3.5" />
-                    <span>Deploy &amp; Generate Pipeline Assets</span>
-                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Right Hand side: Generated Code and Deployment Logs */}
-            <div className="lg:col-span-7 space-y-6 flex flex-col">
-              {/* Deployment Status Log */}
+            {/* Right Column: Schema Visualizer Flow, Compilation Logs & Codes */}
+            <div className="lg:col-span-7 space-y-6 flex flex-col justify-between">
+              {/* Interactive Ingress Visualizer Flow */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3">
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">Visual Pipeline Architecture Flow</span>
+                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3.5 flex flex-col justify-center items-center space-y-3.5 text-[9.5px] font-mono select-none">
+                  {/* Flow Steps */}
+                  <div className="flex items-center space-x-2.5 w-full justify-center">
+                    <div className="px-2.5 py-1.5 bg-blue-950 border border-blue-900 text-blue-300 rounded text-center shadow ring-1 ring-blue-500/20">
+                      <span className="block text-[7.5px] text-slate-500 font-bold">SOURCE</span>
+                      {builderSource.toUpperCase()}
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-600" />
+                    <div className="px-2.5 py-1.5 bg-slate-850 border border-slate-700 text-slate-350 rounded text-center shadow">
+                      <span className="block text-[7.5px] text-slate-500 font-bold">BRONZE</span>
+                      Iceberg raw
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-600" />
+                    <div className="px-2.5 py-1.5 bg-slate-850 border border-slate-700 text-slate-350 rounded text-center shadow">
+                      <span className="block text-[7.5px] text-slate-500 font-bold">DQ CHECK</span>
+                      {dqRules.length} Rules
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-600" />
+                    <div className="px-2.5 py-1.5 bg-slate-850 border border-slate-700 text-slate-350 rounded text-center shadow">
+                      <span className="block text-[7.5px] text-slate-500 font-bold">SILVER</span>
+                      Iceberg clean
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-600" />
+                    <div className="px-2.5 py-1.5 bg-emerald-950 border border-emerald-900 text-emerald-300 rounded text-center shadow ring-1 ring-emerald-500/20">
+                      <span className="block text-[7.5px] text-slate-500 font-bold">GOLD</span>
+                      {destinationType.toUpperCase()}
+                    </div>
+                  </div>
+                  {/* Detailed Description */}
+                  <p className="text-[10px] text-slate-450 font-sans max-w-lg text-center leading-relaxed">
+                    Source data maps to <span className="text-blue-400 font-mono">enstream.bronze_{builderSource}</span> table on S3, passes through assertions (<span className="text-slate-300 font-mono">{dqRules.map(r => r.col).join(", ")}</span>) to landed Silver parquet, and triggers stateful aggregation in <span className="text-emerald-450 font-mono">{destinationType === "redshift" ? "Redshift OLAP" : destinationType === "dynamodb" ? "DynamoDB Feature Store" : "Redis cache"}</span> on window match.
+                  </p>
+                </div>
+              </div>
+
+              {/* Compilation Logging Console */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3 flex-1 flex flex-col">
                 <span className="text-[10px] text-emerald-450 font-bold uppercase tracking-wider block">Deployment Output &amp; Logging Console</span>
-                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex-1 font-mono text-[10.5px] text-slate-350 space-y-2 overflow-y-auto min-h-[220px]">
+                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex-1 font-mono text-[10.5px] text-slate-350 space-y-2 overflow-y-auto max-h-[190px] min-h-[160px]">
                   {builderLogs.map((log, idx) => (
                     <div key={idx} className={
                       log.startsWith("[SUCCESS]") ? "text-emerald-450 font-bold" :
                       log.startsWith("[ERROR]") ? "text-red-400 font-bold" :
-                      log.startsWith("[COMPILE]") ? "text-blue-400 animate-pulse" : "text-slate-400"
+                      log.startsWith("[COMPILE]") ? "text-blue-400" : 
+                      log.startsWith("[USER]") ? "text-indigo-400 font-semibold" : "text-slate-400"
                     }>
                       {log}
                     </div>
@@ -1600,7 +1972,7 @@ GROUP BY
                 </div>
               </div>
 
-              {/* Generated SQL/Code Tabs */}
+              {/* Generated Code Tabs */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Generated Deployment Scripts</span>
@@ -1633,7 +2005,7 @@ GROUP BY
                 </div>
 
                 <div className="relative">
-                  <pre className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-[10px] text-slate-300 font-mono overflow-x-auto overflow-y-auto max-h-[280px]">
+                  <pre className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-[10px] text-slate-300 font-mono overflow-x-auto overflow-y-auto max-h-[190px]">
                     {builderCodeTab === "dbt" && generateDbtCode()}
                     {builderCodeTab === "dataform" && generateDataformCode()}
                     {builderCodeTab === "flink" && generateFlinkCode()}
@@ -1643,9 +2015,7 @@ GROUP BY
             </div>
           </div>
         </div>
-      )}
-
-      {/* SUB-TAB 2.7: MANAGED OPERATIONS FRAMEWORK */}
+      )}{/* SUB-TAB 2.7: MANAGED OPERATIONS FRAMEWORK */}
       {activeSubTab === "framework" && (
         <div className="space-y-6">
           {/* Header Summary */}

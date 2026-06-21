@@ -581,3 +581,38 @@ flowchart TD
 * **Legacy Integrators (Wipro / Tech Mahindra)**:
   - Traditional integrators propose black-box architectures built on closed databases, causing vendor lock-in and high maintenance costs.
   - EnStream utilizes **open-table formats (Apache Iceberg)**, making features and lineage accessible to any analytics engine, while selective dirty-flag score recalculations reduce infrastructure overhead.
+
+### 7.5 Visual No-Code Pipeline Manager (Handoff Autonomy)
+
+To guarantee that EnStream can autonomously maintain and expand the data platform after Incedo's engagement concludes, the prototype implements a **Visual No-Code Pipeline Builder**:
+- **Interface**: Data operators select ingestion sources (Kinesis, S3, CDC), toggle Bronze-to-Silver quality checks (E.164 phone formats, Luhn-checked IMEIs, freshness SLAs), choose Gold aggregation rules (SIM swap velocity, device churn), and define window thresholds.
+- **Code Generation**: The builder automatically generates production-ready **dbt Models (SQL)**, **Dataform scripts (SQLX)**, and **Flink SQL statements** conforming to the platform's schema specifications.
+- **MWAA Integration**: Generated pipelines compile directly into standard DAG definitions for deployment to AWS Managed Workflows for Apache Airflow (MWAA), ensuring zero-touch operational handoffs.
+
+### 7.6 Managed Operations & Handover Framework
+
+To successfully run and scale the Trust Scoring Intelligence Platform, the prototype incorporates a **Managed Operations Framework** detailing the collaborative handover model between EnStream and Incedo:
+
+#### 7.6.1 Operational Lifecycle Phases
+- **Build (Phase 1)**: Incedo designs and constructs the platform core, medallion layers, and ingestion paths.
+- **Operationalize (Phase 2)**: Stabilize, validate, and optimize operations. Implements Data Quality SLAs, drift monitoring, auto-recovery reconcilers, and low-latency cache performance.
+- **Transfer (Phase 3)**: Enable, handover, and empower EnStream's internal teams, executing full operational transition.
+
+#### 7.6.2 The Six Pillars of Platform Operations
+1. **Service Management**: 24x7 monitoring, SLA management, incident, problem, and change workflows.
+2. **Data & Model Operations**: Managing pipeline health, schema drift (PSI), model retraining loops, and versioning.
+3. **Platform Operations**: Infrastructure capacity, deployment pipelines, backup/DR, and cloud cost optimization.
+4. **Security & Compliance**: Identity and access management (IAM), data encryption at rest/transit, vulnerability patching, and RBAC governance.
+5. **Observability & Automation**: Centralized logging/metrics, proactive RCA alerts, auto-scaling, and self-healing.
+6. **FinOps & Value Management**: Cost transparency, chargebacks, forecasting, resource right-sizing, and value realization.
+
+#### 7.6.3 Team Collaboration RACI Matrix
+Upon release implementation, operational accountability (A) transitions to EnStream, while Incedo acts as the executing responsible party (R) during transition:
+- **Strategy & Roadmap**: EnStream = Consulted (C) | Incedo = Responsible (R)
+- **Platform Operations**: EnStream = Accountable (A) | Incedo = Responsible (R)
+- **Incident & Problem Mgmt**: EnStream = Accountable (A) | Incedo = Responsible (R)
+- **Change & Release Mgmt**: EnStream = Consulted (C) | Incedo = Responsible (R)
+- **Data & Model Quality**: EnStream = Accountable (A) | Incedo = Responsible (R)
+- **Security & Compliance**: EnStream = Consulted (C) | Incedo = Responsible (R)
+- **Reporting & Insights**: EnStream = Consulted (C) | Incedo = Responsible (R)
+- **Knowledge Transfer**: EnStream = Accountable (A) | Incedo = Responsible (R)

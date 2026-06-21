@@ -252,4 +252,12 @@ Open [http://localhost:7860](http://localhost:7860) to view the dashboard.
    - Shows real-time drifting performance metrics: Cache Hit Ratio (~98.7%), average cache latency (~6.4ms), peak throughput capacity (~540 QPS), and active Keyspace Size.
   8. Integrated **competitive positioning analysis** comparing our modern open-standard S3 Iceberg design and selective dirty-flag updates with rigid legacy solutions from Wipro/Tech Mahindra.
   9. Incorporated **Subex ML bad actor classification alignment**, detailing how the EnStream platform runs secure containerized ML models directly inside the AWS Medallion catalog, preserving data residency rather than transferring databases off-premises.
+  10. Added a **Visual No-Code Pipeline Builder** subtab inside the Technical Working console:
+      - Allows operators to configure source parameters (e.g. Kinesis, S3), define data quality validation checks (E.164 phone validation, IMEI Luhn checks, freshness checks), and set up Gold layer feature aggregations (SIM Swap velocity, device churn).
+      - Employs live code generators that compile these visual settings into standard **dbt models (SQL)**, **Dataform scripts (SQLX)**, and **Flink SQL streaming definitions**, displaying real-time deployment compilation logs.
+      - Directly addresses executive handoff concerns by enabling EnStream's internal teams to maintain and build new pipelines without vendor dependency.
+  11. Integrated the **Managed Operations Framework** subtab:
+      - Renders an interactive replica of the 3-phase lifecycle (Build, Operationalize, Transfer) and the six core operational pillars.
+      - Displays the **Team Collaboration RACI Matrix** mapping exact ownership roles (EnStream Accountable vs Incedo Responsible) for transition.
+      - Maps post-release processes (Monitor, Analyze, Respond, Validate, Improve) to specific prototype modules like the DQ SLA Ledger, Query Investigator, and Self-Healing Reconciler.
 - **Verification**: Frontend builds cleanly with no compile errors. Pushed modifications to Hugging Face Spaces and GitHub.

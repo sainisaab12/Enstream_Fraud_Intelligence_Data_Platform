@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 export default function TechnicalArchitecture() {
-  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws">("evolution");
+  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws" | "builder" | "framework">("evolution");
   const [selectedCodeSection, setSelectedCodeSection] = useState<string>("dq");
   
   // Trace console states
@@ -27,6 +27,133 @@ export default function TechnicalArchitecture() {
   const [sandboxTrace, setSandboxTrace] = useState<string[]>([]);
   const [editableReq, setEditableReq] = useState<string>("");
   const [evolutionPhase, setEvolutionPhase] = useState<number>(5);
+
+  // Pipeline Builder states
+  const [builderSource, setBuilderSource] = useState<string>("kinesis");
+  const [builderPath, setBuilderPath] = useState<string>("aws.kinesis.enstream.subscriber-events");
+  const [builderDqMsisdn, setBuilderDqMsisdn] = useState<boolean>(true);
+  const [builderDqImei, setBuilderDqImei] = useState<boolean>(true);
+  const [builderDqFreshness, setBuilderDqFreshness] = useState<boolean>(false);
+  const [builderAggType, setBuilderAggType] = useState<string>("sim_swap");
+  const [builderWindow, setBuilderWindow] = useState<string>("2h");
+  const [builderThreshold, setBuilderThreshold] = useState<number>(3);
+  const [builderLogs, setBuilderLogs] = useState<string[]>([
+    "[SYSTEM] Visual No-Code Pipeline Interface Initialized.",
+    "[INFO] Select a source, define DQ checks, choose gold aggregation models, and click 'Deploy'."
+  ]);
+  const [deploying, setDeploying] = useState<boolean>(false);
+  const [builderCodeTab, setBuilderCodeTab] = useState<"dbt" | "dataform" | "flink">("dbt");
+
+  const handleDeployPipeline = () => {
+    setDeploying(true);
+    setBuilderLogs(prev => [
+      ...prev,
+      `[INFO] Starting deployment sequence for pipeline source '${builderSource}'...`,
+      `[COMPILE] Target endpoint schema: '${builderPath}'`,
+      `[COMPILE] Packing DQ SLA validations...`,
+      `[COMPILE] Configuring '${builderAggType}' over ${builderWindow} window (Threshold >= ${builderThreshold})...`
+    ]);
+
+    setTimeout(() => {
+      setDeploying(false);
+      setBuilderLogs(prev => [
+        ...prev,
+        `[SUCCESS] Pipeline successfully compiled & registered to AWS EMR Glue Catalog!`,
+        `[SUCCESS] Ingested Bronze Partition: 'enstream.bronze_${builderSource}'`,
+        `[SUCCESS] Validated Silver Destination: 'enstream.silver_${builderSource}_validated'`,
+        `[SUCCESS] Active Redshift Gold View: 'enstream_gold.features_${builderSource}_${builderAggType}'`,
+        `[SYSTEM] AWS MWAA Scheduler triggered new DAG catalog sync.`,
+        `[SYSTEM] Flink CDC Streaming Job spawned with active state validation (RocksDB backend).`
+      ]);
+    }, 1500);
+  };
+
+  const generateDbtCode = () => {
+    return `{{ config(
+    materialized='incremental',
+    unique_key='event_id',
+    incremental_strategy='merge'
+) }}
+
+WITH raw_events AS (
+    SELECT * FROM {{ source('enstream_bronze', 'raw_${builderSource}') }}
+),
+
+validated_events AS (
+    SELECT 
+        event_id,
+        event_type,
+        msisdn,
+        imei,
+        timestamp,
+        CASE 
+            WHEN msisdn IS NULL THEN FALSE
+            ${builderDqMsisdn ? "WHEN NOT REGEXP_LIKE(msisdn, '^\\+1[0-9]{10}$') THEN FALSE" : ""}
+            ${builderDqImei ? "WHEN LENGTH(imei) != 15 THEN FALSE" : ""}
+            ${builderDqFreshness ? "WHEN timestamp < DATEADD(hour, -2, GETDATE()) THEN FALSE" : ""}
+            ELSE TRUE
+        END as dq_passed
+    FROM raw_events
+)
+
+SELECT * FROM validated_events
+WHERE dq_passed = TRUE;`;
+  };
+
+  const generateDataformCode = () => {
+    return `config {
+  type: "incremental",
+  schema: "enstream_silver",
+  name: "silver_events_${builderSource}",
+  assertions: {
+    uniqueKey: ["event_id"],
+    nonNull: ["msisdn", "imei"]
+  }
+}
+
+SELECT 
+  event_id,
+  event_type,
+  msisdn,
+  imei,
+  timestamp,
+  ingested_at
+FROM 
+  \${ref("bronze_${builderSource}")}
+WHERE 
+  1=1
+  ${builderDqMsisdn ? "AND REGEXP_LIKE(msisdn, '^\\+1[0-9]{10}$')" : ""}
+  ${builderDqImei ? "AND LENGTH(imei) = 15" : ""}
+  ${builderDqFreshness ? "AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 HOUR)" : ""};`;
+  };
+
+  const generateFlinkCode = () => {
+    return `CREATE TABLE silver_events_${builderSource} (
+  event_id STRING,
+  event_type STRING,
+  msisdn STRING,
+  imei STRING,
+  \`timestamp\` TIMESTAMP(3),
+  WATERMARK FOR \`timestamp\` AS \`timestamp\` - INTERVAL '5' SECOND
+) WITH (
+  'connector' = 'kinesis',
+  'stream' = '${builderPath}',
+  'aws.region' = 'us-east-1',
+  'format' = 'json'
+);
+
+-- Stateful rolling aggregation window
+CREATE VIEW gold_features_${builderSource}_${builderAggType} AS
+SELECT 
+  msisdn,
+  COUNT(event_id) as event_count,
+  COUNT(DISTINCT imei) as distinct_imei_count,
+  TUMBLE_START(\`timestamp\`, INTERVAL '${builderWindow === "2h" ? "2" : builderWindow === "24h" ? "24" : "720"}' HOUR) as window_start
+FROM silver_events_${builderSource}
+GROUP BY 
+  msisdn, 
+  TUMBLE(\`timestamp\`, INTERVAL '${builderWindow === "2h" ? "2" : builderWindow === "24h" ? "24" : "720"}' HOUR);`;
+  };
 
   // Caching states
   const [cacheMode, setCacheMode] = useState<"hit" | "dirty_bypass" | "miss">("hit");
@@ -830,6 +957,22 @@ export default function TechnicalArchitecture() {
             Architecture Evolution
           </button>
           <button
+            onClick={() => setActiveSubTab("builder")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+              activeSubTab === "builder" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            No-Code Pipeline Builder
+          </button>
+          <button
+            onClick={() => setActiveSubTab("framework")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+              activeSubTab === "framework" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            Managed Operations Framework
+          </button>
+          <button
             onClick={() => setActiveSubTab("brief")}
             className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
               activeSubTab === "brief" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
@@ -1288,6 +1431,425 @@ export default function TechnicalArchitecture() {
                     />
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB 2.5: NO-CODE PIPELINE BUILDER */}
+      {activeSubTab === "builder" && (
+        <div className="space-y-6">
+          {/* Header Description */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-2">
+            <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center">
+              <Layers className="h-4 w-4 text-emerald-450 mr-2" />
+              Visual No-Code Pipeline Manager & Code Generator
+            </h3>
+            <p className="text-xs text-slate-400 font-sans max-w-4xl">
+              This interface allows EnStream data operators to create, manage, and scale ingestion pipelines and data quality checks without writing complex Apache Spark/Flink code. Define sources, configure DQ validation rules, select gold aggregations, and instantly generate standard **dbt models (SQL)**, **Dataform scripts (SQLX)**, or **Flink SQL streaming definitions** for deployment.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left Hand side: Pipeline Configuration Form */}
+            <div className="lg:col-span-5 space-y-6">
+              <div className="bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">1. Ingestion Data Source</span>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Source Connector Type:</label>
+                    <select 
+                      value={builderSource}
+                      onChange={(e) => setBuilderSource(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                    >
+                      <option value="kinesis">AWS Kinesis Stream (Real-Time)</option>
+                      <option value="s3">Amazon S3 Ingress (Batch Parquet/CSV)</option>
+                      <option value="mysql_cdc">MySQL CDC Agent (Debezium / Kafka)</option>
+                      <option value="sftp">SFTP Partner contribution (Batch Files)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Stream Name / S3 URI Path:</label>
+                    <input 
+                      type="text" 
+                      value={builderPath}
+                      onChange={(e) => setBuilderPath(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500" 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">2. Bronze-to-Silver Data Quality (DQ) Rules</span>
+                <div className="space-y-2">
+                  <label className="flex items-start space-x-2.5 p-2 bg-slate-900/60 border border-slate-850 rounded hover:border-slate-800 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={builderDqMsisdn} 
+                      onChange={(e) => setBuilderDqMsisdn(e.target.checked)}
+                      className="mt-0.5" 
+                    />
+                    <div className="text-[11px] font-sans">
+                      <span className="font-bold text-slate-200 block">E.164 MSISDN Format Check</span>
+                      <span className="text-slate-400">Validates regex phone formats for Bell, Rogers, and Telus (+1 Canadian prefix).</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start space-x-2.5 p-2 bg-slate-900/60 border border-slate-850 rounded hover:border-slate-800 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={builderDqImei} 
+                      onChange={(e) => setBuilderDqImei(e.target.checked)}
+                      className="mt-0.5" 
+                    />
+                    <div className="text-[11px] font-sans">
+                      <span className="font-bold text-slate-200 block">Handset IMEI 15-Digit Luhn Check</span>
+                      <span className="text-slate-400">Verifies hardware identifiers match GSMA TAC structures.</span>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start space-x-2.5 p-2 bg-slate-900/60 border border-slate-850 rounded hover:border-slate-800 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={builderDqFreshness} 
+                      onChange={(e) => setBuilderDqFreshness(e.target.checked)}
+                      className="mt-0.5" 
+                    />
+                    <div className="text-[11px] font-sans">
+                      <span className="font-bold text-slate-200 block">Ingestion Freshness SLA Check</span>
+                      <span className="text-slate-400">Quarantines payloads arriving with latency &gt; 2 hours.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
+                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider block">3. Silver-to-Gold Feature Aggregations</span>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Aggregation Function:</label>
+                    <select 
+                      value={builderAggType}
+                      onChange={(e) => setBuilderAggType(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                    >
+                      <option value="sim_swap">SIM Swap Velocity (events count within window)</option>
+                      <option value="device_churn">Device Churn (distinct IMEI per phone)</option>
+                      <option value="port_freq">Inter-Carrier Porting Frequency</option>
+                      <option value="graph_ring">Network Fraud Ring (shared device connections)</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Time Window:</label>
+                      <select 
+                        value={builderWindow}
+                        onChange={(e) => setBuilderWindow(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500 font-mono"
+                      >
+                        <option value="2h">2 Hours</option>
+                        <option value="24h">24 Hours</option>
+                        <option value="30d">30 Days</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block font-mono mb-1 font-bold">Target Threshold:</label>
+                      <input 
+                        type="number" 
+                        value={builderThreshold}
+                        onChange={(e) => setBuilderThreshold(Number(e.target.value))}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500" 
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleDeployPipeline}
+                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-slate-100 rounded-lg text-xs font-bold transition-all shadow-md mt-2 flex items-center justify-center space-x-1.5"
+                  >
+                    <Play className="h-3.5 w-3.5" />
+                    <span>Deploy &amp; Generate Pipeline Assets</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Hand side: Generated Code and Deployment Logs */}
+            <div className="lg:col-span-7 space-y-6 flex flex-col">
+              {/* Deployment Status Log */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3 flex-1 flex flex-col">
+                <span className="text-[10px] text-emerald-450 font-bold uppercase tracking-wider block">Deployment Output &amp; Logging Console</span>
+                <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 flex-1 font-mono text-[10.5px] text-slate-350 space-y-2 overflow-y-auto min-h-[220px]">
+                  {builderLogs.map((log, idx) => (
+                    <div key={idx} className={
+                      log.startsWith("[SUCCESS]") ? "text-emerald-450 font-bold" :
+                      log.startsWith("[ERROR]") ? "text-red-400 font-bold" :
+                      log.startsWith("[COMPILE]") ? "text-blue-400 animate-pulse" : "text-slate-400"
+                    }>
+                      {log}
+                    </div>
+                  ))}
+                  {deploying && (
+                    <div className="flex items-center text-blue-400 space-x-2 animate-pulse mt-2">
+                      <Loader className="h-3 w-3 animate-spin" />
+                      <span>Compiling pipeline dependencies...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Generated SQL/Code Tabs */}
+              <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Generated Deployment Scripts</span>
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => setBuilderCodeTab("dbt")}
+                      className={`px-2 py-0.5 text-[9.5px] font-mono rounded border transition-all ${
+                        builderCodeTab === "dbt" ? "bg-slate-850 text-blue-400 border-slate-700" : "text-slate-500 border-transparent hover:text-slate-350"
+                      }`}
+                    >
+                      dbt Model (SQL)
+                    </button>
+                    <button 
+                      onClick={() => setBuilderCodeTab("dataform")}
+                      className={`px-2 py-0.5 text-[9.5px] font-mono rounded border transition-all ${
+                        builderCodeTab === "dataform" ? "bg-slate-850 text-blue-400 border-slate-700" : "text-slate-500 border-transparent hover:text-slate-350"
+                      }`}
+                    >
+                      Dataform (SQLX)
+                    </button>
+                    <button 
+                      onClick={() => setBuilderCodeTab("flink")}
+                      className={`px-2 py-0.5 text-[9.5px] font-mono rounded border transition-all ${
+                        builderCodeTab === "flink" ? "bg-slate-850 text-blue-400 border-slate-700" : "text-slate-500 border-transparent hover:text-slate-350"
+                      }`}
+                    >
+                      Flink SQL
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <pre className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-[10px] text-slate-300 font-mono overflow-x-auto overflow-y-auto max-h-[280px]">
+                    {builderCodeTab === "dbt" && generateDbtCode()}
+                    {builderCodeTab === "dataform" && generateDataformCode()}
+                    {builderCodeTab === "flink" && generateFlinkCode()}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB 2.7: MANAGED OPERATIONS FRAMEWORK */}
+      {activeSubTab === "framework" && (
+        <div className="space-y-6">
+          {/* Header Summary */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-2">
+            <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center">
+              <Settings className="h-4 w-4 text-blue-450 mr-2" />
+              Managed Operations &amp; Handover Framework
+            </h3>
+            <p className="text-xs text-slate-400 font-sans max-w-4xl">
+              A collaborative, outcome-driven operational model to stabilize, validate, and scale the Trust Scoring Intelligence Platform, ensuring a smooth knowledge transfer and handover from Incedo to EnStream.
+            </p>
+          </div>
+
+          {/* Timeline Phases: BUILD -> OPERATIONALIZE -> TRANSFER */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-sans text-xs">
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 text-center space-y-1">
+              <span className="text-[10px] text-slate-500 font-bold uppercase">Phase 1: BUILD</span>
+              <h4 className="text-sm font-bold text-blue-400 uppercase tracking-wide">Design &amp; Build</h4>
+              <p className="text-slate-400 font-sans text-[11px]">Core Platform Setup (Medallion S3 Iceberg tables, CDC agents, and streaming edge connectors)</p>
+            </div>
+            <div className="bg-slate-950 p-4 rounded-xl border border-blue-900 text-center space-y-1 ring-1 ring-blue-500/20">
+              <span className="text-[10px] text-emerald-450 font-bold uppercase">Phase 2: OPERATIONALIZE</span>
+              <h4 className="text-sm font-bold text-emerald-450 uppercase tracking-wide">Stabilize &amp; Optimize</h4>
+              <p className="text-slate-300 font-sans text-[11px]">Validating operational parameters (Data Quality SLAs, Auto-Healing, and Drift monitoring)</p>
+            </div>
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-850 text-center space-y-1">
+              <span className="text-[10px] text-slate-500 font-bold uppercase">Phase 3: TRANSFER</span>
+              <h4 className="text-sm font-bold text-purple-400 uppercase tracking-wide">Enable &amp; Handover</h4>
+              <p className="text-slate-400 font-sans text-[11px]">Knowledge transfer, operational enablement, and empowering EnStream teams to take ownership</p>
+            </div>
+          </div>
+
+          {/* Six Pillars of Operations */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 font-sans text-[11px]">
+            {/* 1. Service Management */}
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-2">
+              <span className="text-blue-450 font-bold uppercase tracking-wider block">1. Service Mgmt</span>
+              <ul className="text-slate-450 list-disc pl-3.5 space-y-1 font-sans">
+                <li>24x7 Monitoring &amp; Alerting</li>
+                <li>Incident, Problem &amp; Change Management</li>
+                <li>SLA Thresholds Management</li>
+                <li>Service Desk &amp; Telecom Communications</li>
+              </ul>
+            </div>
+            {/* 2. Data & Model Operations */}
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-2">
+              <span className="text-blue-455 font-bold uppercase tracking-wider block">2. Data &amp; Model Ops</span>
+              <ul className="text-slate-455 list-disc pl-3.5 space-y-1 font-sans">
+                <li>Data Quality &amp; Drift Management</li>
+                <li>Pipeline Health &amp; Auto-recovery</li>
+                <li>Model performance monitoring</li>
+                <li>Retraining &amp; model versioning</li>
+              </ul>
+            </div>
+            {/* 3. Platform Operations */}
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-2">
+              <span className="text-blue-455 font-bold uppercase tracking-wider block">3. Platform Ops</span>
+              <ul className="text-slate-455 list-disc pl-3.5 space-y-1 font-sans">
+                <li>Infra &amp; capacity Management</li>
+                <li>Deployment &amp; release Management</li>
+                <li>Backup, DR and Business Continuity</li>
+                <li>Cost, monitoring and optimization</li>
+              </ul>
+            </div>
+            {/* 4. Security & Compliance */}
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-2">
+              <span className="text-blue-455 font-bold uppercase tracking-wider block">4. Security &amp; Comp</span>
+              <ul className="text-slate-455 list-disc pl-3.5 space-y-1 font-sans">
+                <li>Identity &amp; access management</li>
+                <li>Data security &amp; encryption</li>
+                <li>Vulnerability management</li>
+                <li>Audit, governance &amp; reporting</li>
+              </ul>
+            </div>
+            {/* 5. Observability & Automation */}
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-2">
+              <span className="text-blue-455 font-bold uppercase tracking-wider block">5. Observability</span>
+              <ul className="text-slate-455 list-disc pl-3.5 space-y-1 font-sans">
+                <li>Centralized logging &amp; metrics</li>
+                <li>Proactive RCA &amp; alert correlation</li>
+                <li>Auto-healing &amp; scaling automation</li>
+                <li>Operations dashboards &amp; reports</li>
+              </ul>
+            </div>
+            {/* 6. FinOps & Value Management */}
+            <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-850 space-y-2">
+              <span className="text-blue-455 font-bold uppercase tracking-wider block">6. FinOps &amp; Value</span>
+              <ul className="text-slate-455 list-disc pl-3.5 space-y-1 font-sans">
+                <li>Cost transparency &amp; chargeback</li>
+                <li>Budgeting &amp; Forecasting</li>
+                <li>Resource right-sizing</li>
+                <li>Value realization &amp; KPI tracking</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Key Processes post Release Implementation */}
+            <div className="lg:col-span-6 bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
+              <span className="text-[10px] text-emerald-450 font-bold uppercase tracking-wider block">Key Processes post Release Implementation</span>
+              <div className="grid grid-cols-5 gap-1.5 text-center text-[10px] font-mono font-bold">
+                <div className="p-2.5 bg-slate-900 border border-slate-800 rounded text-slate-300">
+                  <span className="block text-[8px] text-slate-500 font-bold mb-1">MONITOR</span>
+                  Monitor &amp; Detect
+                </div>
+                <div className="p-2.5 bg-slate-900 border border-slate-800 rounded text-slate-300">
+                  <span className="block text-[8px] text-slate-500 font-bold mb-1">ANALYZE</span>
+                  Analyze &amp; Triage
+                </div>
+                <div className="p-2.5 bg-slate-900 border border-slate-800 rounded text-slate-300">
+                  <span className="block text-[8px] text-slate-500 font-bold mb-1">RESPOND</span>
+                  Respond &amp; Resolve
+                </div>
+                <div className="p-2.5 bg-slate-900 border border-slate-800 rounded text-slate-300">
+                  <span className="block text-[8px] text-slate-500 font-bold mb-1">VALIDATE</span>
+                  Validate &amp; Close
+                </div>
+                <div className="p-2.5 bg-slate-900 border border-slate-800 rounded text-slate-300">
+                  <span className="block text-[8px] text-slate-500 font-bold mb-1">IMPROVE</span>
+                  Improve &amp; Prevent
+                </div>
+              </div>
+
+              <div className="border-t border-slate-900 pt-3 space-y-2">
+                <span className="text-[9px] uppercase font-bold text-slate-500 block font-mono">Mapped Platform Enablers:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[10.5px]">
+                  <div className="p-2.5 bg-slate-900 border border-slate-850 rounded font-sans space-y-1">
+                    <span className="font-bold text-slate-200">1. Monitor &amp; Detect</span>
+                    <p className="text-[9.5px] text-slate-400">Supported by **DQ Monitor Ingestion SLA** cards and pulsating alert status indicators.</p>
+                  </div>
+                  <div className="p-2.5 bg-slate-900 border border-slate-850 rounded font-sans space-y-1">
+                    <span className="font-bold text-slate-200">2. Analyze &amp; Triage</span>
+                    <p className="text-[9.5px] text-slate-400">Supported by **Query Investigator** time-travel snapshots and bipartite fraud-ring graphs.</p>
+                  </div>
+                  <div className="p-2.5 bg-slate-900 border border-slate-850 rounded font-sans space-y-1">
+                    <span className="font-bold text-slate-200">3. Respond &amp; Resolve</span>
+                    <p className="text-[9.5px] text-slate-400">Supported by **Pipeline Self-Healing Reconciler** for direct data restoration and backfills.</p>
+                  </div>
+                  <div className="p-2.5 bg-slate-900 border border-slate-850 rounded font-sans space-y-1">
+                    <span className="font-bold text-slate-200">4. Validate &amp; Prevent</span>
+                    <p className="text-[9.5px] text-slate-400">Supported by **Exchange Hub audit logs** and RBAC PII data masking switches for compliance.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RACI Matrix - Team Collaboration */}
+            <div className="lg:col-span-6 bg-slate-950 p-5 rounded-xl border border-slate-850 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+                <span className="text-[10px] text-emerald-450 font-bold uppercase tracking-wider block">Team Collaboration RACI Matrix</span>
+                <span className="text-[8px] text-slate-500 font-mono">R: Responsible | A: Accountable | C: Consulted | I: Informed</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-sans text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-850 text-slate-400">
+                      <th className="pb-2 font-bold">Operational Scope</th>
+                      <th className="pb-2 font-bold text-center text-blue-400">EnStream (Client)</th>
+                      <th className="pb-2 font-bold text-center text-emerald-450">Incedo (Partner)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-850 text-slate-300">
+                    <tr className="hover:bg-slate-900/40">
+                      <td className="py-2 font-medium">Strategy &amp; Roadmap</td>
+                      <td className="py-2 text-center font-bold text-blue-400">C</td>
+                      <td className="py-2 text-center font-bold text-emerald-450">R</td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/40">
+                      <td className="py-2 font-medium">Platform Operations</td>
+                      <td className="py-2 text-center font-bold text-blue-400">A</td>
+                      <td className="py-2 text-center font-bold text-emerald-450">R</td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/40">
+                      <td className="py-2 font-medium">Incident &amp; Problem Mgmt</td>
+                      <td className="py-2 text-center font-bold text-blue-400">A</td>
+                      <td className="py-2 text-center font-bold text-emerald-450">R</td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/40">
+                      <td className="py-2 font-medium">Change &amp; Release Mgmt</td>
+                      <td className="py-2 text-center font-bold text-blue-400">C</td>
+                      <td className="py-2 text-center font-bold text-emerald-450">R</td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/40">
+                      <td className="py-2 font-medium">Data &amp; Model Quality</td>
+                      <td className="py-2 text-center font-bold text-blue-400">A</td>
+                      <td className="py-2 text-center font-bold text-emerald-450">R</td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/40">
+                      <td className="py-2 font-medium">Security &amp; Compliance</td>
+                      <td className="py-2 text-center font-bold text-blue-400">C</td>
+                      <td className="py-2 text-center font-bold text-emerald-450">R</td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/40">
+                      <td className="py-2 font-medium">Reporting &amp; Insights</td>
+                      <td className="py-2 text-center font-bold text-blue-400">C</td>
+                      <td className="py-2 text-center font-bold text-emerald-450">R</td>
+                    </tr>
+                    <tr className="hover:bg-slate-900/40">
+                      <td className="py-2 font-medium">Knowledge Transfer &amp; Handover</td>
+                      <td className="py-2 text-center font-bold text-blue-400">A</td>
+                      <td className="py-2 text-center font-bold text-emerald-450">R</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

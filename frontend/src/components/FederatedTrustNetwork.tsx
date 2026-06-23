@@ -72,6 +72,10 @@ export default function FederatedTrustNetwork() {
   const [onboardFinished, setOnboardFinished] = useState(false);
   const [onboardLoading, setOnboardLoading] = useState(false);
 
+  // --- Federated Trust Node Architecture subtab states ---
+  const [nodeSubTab, setNodeSubTab] = useState<"functional" | "technical" | "interaction">("functional");
+  const [selectedFuncBlock, setSelectedFuncBlock] = useState<string>("ingress");
+
   // --- Onboarding Features Option List ---
   const availableFeatures = [
     { id: "subscriber_tenure", label: "Subscriber Tenure" },
@@ -855,66 +859,251 @@ export default function FederatedTrustNetwork() {
 
             {/* SCREEN 3: FEDERATED TRUST NODE ARCHITECTURE */}
             {activeScreen === 2 && (
-              <div className="space-y-6 animate-fadeIn">
-                <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div>
-                  <h4 className="text-xs uppercase font-mono text-blue-400 font-black mb-3">Rogers Local Node Internal Configuration</h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                    
-                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-center">
-                      <Database className="w-5 h-5 mx-auto text-blue-500 mb-1" />
-                      <h5 className="text-[10px] font-bold uppercase text-slate-300">Connectivity</h5>
-                      <p className="text-[9px] text-slate-500 font-mono mt-1">Oracle, Kafka, REST, Snowflake, Databricks</p>
-                    </div>
-
-                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-center">
-                      <Cpu className="w-5 h-5 mx-auto text-purple-500 mb-1" />
-                      <h5 className="text-[10px] font-bold uppercase text-slate-300">Feature Engine</h5>
-                      <p className="text-[9px] text-slate-500 font-mono mt-1">Tenure, SIM Swaps, Device Trust, Exposure</p>
-                    </div>
-
-                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-center">
-                      <Layers className="w-5 h-5 mx-auto text-amber-500 mb-1" />
-                      <h5 className="text-[10px] font-bold uppercase text-slate-300">Feature Store</h5>
-                      <p className="text-[9px] text-slate-500 font-mono mt-1">Online Store (Redis) / Offline Store</p>
-                    </div>
-
-                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-center">
-                      <Shield className="w-5 h-5 mx-auto text-red-500 mb-1" />
-                      <h5 className="text-[10px] font-bold uppercase text-slate-300">Privacy Gate</h5>
-                      <p className="text-[9px] text-slate-500 font-mono mt-1">Allowed Features, Masked Fields, Data Contracts</p>
-                    </div>
-
-                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-center">
-                      <Share2 className="w-5 h-5 mx-auto text-emerald-500 mb-1" />
-                      <h5 className="text-[10px] font-bold uppercase text-slate-300">Federation Gate</h5>
-                      <p className="text-[9px] text-slate-500 font-mono mt-1">Trust Signals, Risk Signals, Feature Sharing</p>
-                    </div>
-
-                  </div>
+              <div className="space-y-5 animate-fadeIn">
+                
+                {/* SUB-TABS FOR DETAILS */}
+                <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs shrink-0 select-none">
+                  <button
+                    onClick={() => setNodeSubTab("functional")}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+                      nodeSubTab === "functional" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+                    }`}
+                  >
+                    Functional Architecture
+                  </button>
+                  <button
+                    onClick={() => setNodeSubTab("technical")}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+                      nodeSubTab === "technical" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+                    }`}
+                  >
+                    Technical Stack Spec
+                  </button>
+                  <button
+                    onClick={() => setNodeSubTab("interaction")}
+                    className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+                      nodeSubTab === "interaction" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+                    }`}
+                  >
+                    Central Platform Interaction
+                  </button>
                 </div>
 
-                {/* VISUAL FLOW DIAGRAM */}
-                <div className="flex flex-col md:flex-row items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-850 gap-4">
-                  <div className="text-center md:text-left">
-                    <span className="text-[9px] text-slate-500 font-mono uppercase block">Local Database Raw Input</span>
-                    <span className="text-[11px] font-bold text-slate-300">Subscriber Activity logs</span>
+                {/* FUNCTIONAL ARCHITECTURE SUB-TAB */}
+                {nodeSubTab === "functional" && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
+                      <h4 className="text-xs uppercase font-mono text-blue-400 font-black mb-3">Trust Node Functional Ingestion & In-Memory Pipeline</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <button 
+                          onClick={() => setSelectedFuncBlock("ingress")}
+                          className={`p-3.5 rounded-lg border text-left transition-all ${
+                            selectedFuncBlock === "ingress" 
+                              ? "bg-blue-600/10 border-blue-500 text-blue-300" 
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-350"
+                          }`}
+                        >
+                          <Database className="w-5 h-5 text-blue-500 mb-1" />
+                          <h5 className="text-[10px] font-bold uppercase">1. Data Ingress</h5>
+                          <p className="text-[8.5px] mt-1 leading-normal text-slate-450">Ingests local CRM, billing transaction sequences, and device event telemetry.</p>
+                        </button>
+
+                        <button 
+                          onClick={() => setSelectedFuncBlock("engine")}
+                          className={`p-3.5 rounded-lg border text-left transition-all ${
+                            selectedFuncBlock === "engine" 
+                              ? "bg-purple-600/10 border-purple-500 text-purple-300" 
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-350"
+                          }`}
+                        >
+                          <Cpu className="w-5 h-5 text-purple-500 mb-1" />
+                          <h5 className="text-[10px] font-bold uppercase">2. Feature Engine</h5>
+                          <p className="text-[8.5px] mt-1 leading-normal text-slate-450">Calculates SIM swap counts, device network sizes, and tenure ratios statefully.</p>
+                        </button>
+
+                        <button 
+                          onClick={() => setSelectedFuncBlock("privacy")}
+                          className={`p-3.5 rounded-lg border text-left transition-all ${
+                            selectedFuncBlock === "privacy" 
+                              ? "bg-red-600/10 border-red-500 text-red-300" 
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-350"
+                          }`}
+                        >
+                          <Shield className="w-5 h-5 text-red-500 mb-1" />
+                          <h5 className="text-[10px] font-bold uppercase">3. Privacy Shield</h5>
+                          <p className="text-[8.5px] mt-1 leading-normal text-slate-450">Cryptographically hashes MSISDN/IMEI. Enforces Zero-PII contract boundaries.</p>
+                        </button>
+
+                        <button 
+                          onClick={() => setSelectedFuncBlock("gateway")}
+                          className={`p-3.5 rounded-lg border text-left transition-all ${
+                            selectedFuncBlock === "gateway" 
+                              ? "bg-emerald-600/10 border-emerald-500 text-emerald-300" 
+                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-350"
+                          }`}
+                        >
+                          <Share2 className="w-5 h-5 text-emerald-500 mb-1" />
+                          <h5 className="text-[10px] font-bold uppercase">4. Federation Gate</h5>
+                          <p className="text-[8.5px] mt-1 leading-normal text-slate-450">Exposes pre-computed conformed features. Zero raw data shared.</p>
+                        </button>
+                      </div>
+
+                      {/* Detail card of selected block */}
+                      <div className="mt-4 bg-slate-900/60 p-4 rounded-xl border border-slate-850 text-xs text-slate-300">
+                        {selectedFuncBlock === "ingress" && (
+                          <div>
+                            <span className="text-blue-400 font-bold block mb-1">Functional Module: Data Ingress (Local Database Connections)</span>
+                            Ingests transaction metadata directly from local relational databases, network cell tower logs, and billing files. Standard connectors pull logs from internal network feeds without forwarding records outside the carrier boundaries. 
+                            <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center space-x-2">
+                              <span>✓ Isolation: Absolute</span>
+                              <span>• Ingress SLA: &lt; 2 minutes</span>
+                              <span>• CDC Tracking: Enabled</span>
+                            </div>
+                          </div>
+                        )}
+                        {selectedFuncBlock === "engine" && (
+                          <div>
+                            <span className="text-purple-400 font-bold block mb-1">Functional Module: Stateful Feature Engine</span>
+                            Builds rolling time-window feature variables. For example, counting SIM card swap requests in the last 2 hours, tracking billing address consistency scores, and computing hardware change frequency indices. These are calculated locally to verify device integrity in real-time.
+                            <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center space-x-2">
+                              <span>✓ Memory Engine: Redis/RocksDB</span>
+                              <span>• Processing Latency: &lt; 10ms</span>
+                            </div>
+                          </div>
+                        )}
+                        {selectedFuncBlock === "privacy" && (
+                          <div>
+                            <span className="text-red-400 font-bold block mb-1">Functional Module: Privacy Shield & Data Contracts</span>
+                            Encrypts or hashes identity attributes into secure cryptographic IDs. Strips plain-text subscriber names, exact IP values, street addresses, and social identifiers. It validates feature output payloads against data contracts to ensure no raw PII ever escapes.
+                            <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center space-x-2">
+                              <span>✓ Masking: Cryptographic Hashing</span>
+                              <span>• Compliance: GDPR, PIPEDA, HIPAA</span>
+                            </div>
+                          </div>
+                        )}
+                        {selectedFuncBlock === "gateway" && (
+                          <div>
+                            <span className="text-emerald-400 font-bold block mb-1">Functional Module: Federation Gateway Egress</span>
+                            Signs and packs conformed, anonymized feature arrays. It opens a secure TLS socket tunnel with the central EnStream Platform, publishing trust signals (e.g., SIM_SWAP_COUNT_2H = 0, TENURE_DAYS = 2920) upon request or event triggers.
+                            <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center space-x-2">
+                              <span>✓ Encryption: JWE Envelope</span>
+                              <span>• Port: 443/8443</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-slate-600 hidden md:block" />
-                  <div className="px-3 py-1.5 bg-blue-600/10 border border-blue-500/20 rounded text-[10px] text-blue-400 font-mono font-bold">
-                    Feature Engine computation
+                )}
+
+                {/* TECHNICAL STACK SPEC SUB-TAB */}
+                {nodeSubTab === "technical" && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="bg-slate-950 rounded-xl border border-slate-800 p-5">
+                      <h4 className="text-xs uppercase font-mono text-blue-400 font-black mb-3">Trust Node Technical Architecture & Stack</h4>
+                      
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-[10.5px] font-mono text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-800 text-slate-500">
+                              <th className="pb-2">Architectural Layer</th>
+                              <th className="pb-2">Technology Used</th>
+                              <th className="pb-2">Technical Rationale & Capability</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-850/80 text-slate-350">
+                            <tr>
+                              <td className="py-2.5 font-bold text-slate-200">Local Streaming Bus</td>
+                              <td className="py-2.5 text-blue-400">Apache Kafka Streams</td>
+                              <td className="py-2.5 text-slate-400">Ensures continuous low-latency ingestion of CRM and cell tower event feeds.</td>
+                            </tr>
+                            <tr>
+                              <td className="py-2.5 font-bold text-slate-200">State Store Database</td>
+                              <td className="py-2.5 text-purple-400">Embedded RocksDB</td>
+                              <td className="py-2.5 text-slate-400">Serves in-memory rolling time-window feature calculations with sub-millisecond writes.</td>
+                            </tr>
+                            <tr>
+                              <td className="py-2.5 font-bold text-slate-200">Local Cold Storage</td>
+                              <td className="py-2.5 text-amber-400">Apache Iceberg / S3</td>
+                              <td className="py-2.5 text-slate-400">Allows offline models training on conformed historical metadata without database lock-in.</td>
+                            </tr>
+                            <tr>
+                              <td className="py-2.5 font-bold text-slate-200">Cryptographic Signing</td>
+                              <td className="py-2.5 text-red-400">JOSE JWE (RFC 7516)</td>
+                              <td className="py-2.5 text-slate-400">Envelopes output features in an encrypted container signed by the node's private key.</td>
+                            </tr>
+                            <tr>
+                              <td className="py-2.5 font-bold text-slate-200">Network Transport</td>
+                              <td className="py-2.5 text-emerald-400">gRPC over mTLS 1.3</td>
+                              <td className="py-2.5 text-slate-400">Mutual SSL certificate validation secures connection directly to the central clearinghouse.</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-slate-600 hidden md:block" />
-                  <div className="px-3 py-1.5 bg-red-600/10 border border-red-500/20 rounded text-[10px] text-red-400 font-mono font-bold">
-                    Privacy Shield PII scrubbing
+                )}
+
+                {/* CENTRAL PLATFORM INTERACTION SUB-TAB */}
+                {nodeSubTab === "interaction" && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 space-y-4">
+                      <h4 className="text-xs uppercase font-mono text-blue-400 font-black">Node & Central Intelligence Interaction Protocol</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-850 space-y-2">
+                          <h5 className="text-[11px] font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center">
+                            <Share2 className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+                            <span>1. Data Plane: Real-Time Signal Exchange</span>
+                          </h5>
+                          <ul className="space-y-1.5 text-[10px] text-slate-400 leading-relaxed font-mono">
+                            <li>• Bank initiates credit query to central EnStream platform.</li>
+                            <li>• Central router queries Rogers, Bell, and Telus nodes simultaneously.</li>
+                            <li>• Nodes lookup computed features (SIM Swap, Tenure) in local memory.</li>
+                            <li>• Nodes encrypt payload using gRPC/JWE, returning anonymous values.</li>
+                            <li>• Central platform aggregates signals, generates score, caches in Redis.</li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-850 space-y-2">
+                          <h5 className="text-[11px] font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center">
+                            <Settings className="w-3.5 h-3.5 mr-1 text-blue-400" />
+                            <span>2. Control Plane: Orchestration & Policy</span>
+                          </h5>
+                          <ul className="space-y-1.5 text-[10px] text-slate-400 leading-relaxed font-mono">
+                            <li>• Central system monitors node heartbeats and active latencies.</li>
+                            <li>• Control plane pushes updated ML model weights and scoring rules.</li>
+                            <li>• Pushes updated JSON schema data contract files to nodes.</li>
+                            <li>• Configures logging parameters and logs compliance checks.</li>
+                            <li>• Initiates automated local node reconciliation during gaps.</li>
+                          </ul>
+                        </div>
+
+                      </div>
+
+                      {/* Visual Flow diagram */}
+                      <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-850 flex flex-col md:flex-row items-center justify-between text-[9px] font-mono gap-4 text-slate-400">
+                        <div className="text-center bg-slate-950 p-2.5 rounded border border-slate-800 w-full md:w-auto">
+                          <span className="text-slate-500 block mb-0.5">LOCAL PROVIDER</span>
+                          <span className="text-slate-200 font-bold">EnStream Trust Node</span>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-600 hidden md:block" />
+                        <div className="text-center px-3 py-1.5 bg-blue-600/10 border border-blue-500/20 rounded text-blue-400 font-bold">
+                          gRPC Signal Tunnel (JWE Encrypted Payload)
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-slate-600 hidden md:block" />
+                        <div className="text-center bg-slate-950 p-2.5 rounded border border-slate-800 w-full md:w-auto">
+                          <span className="text-slate-500 block mb-0.5">ENSTREAM CENTRAL</span>
+                          <span className="text-slate-200 font-bold">Federation & Scoring Engine</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-slate-600 hidden md:block" />
-                  <div className="text-center md:text-right">
-                    <span className="text-[9px] text-slate-500 font-mono uppercase block">Shared Signal Outflow</span>
-                    <span className="text-[11px] font-bold text-emerald-400">Anonymized trust features</span>
-                  </div>
-                </div>
+                )}
+
               </div>
             )}
 

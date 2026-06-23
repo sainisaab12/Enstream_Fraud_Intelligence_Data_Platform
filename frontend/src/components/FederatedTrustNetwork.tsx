@@ -1001,46 +1001,56 @@ export default function FederatedTrustNetwork() {
                 {/* TECHNICAL STACK SPEC SUB-TAB */}
                 {nodeSubTab === "technical" && (
                   <div className="space-y-4 animate-fadeIn">
-                    <div className="bg-slate-950 rounded-xl border border-slate-800 p-5">
+                    <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 space-y-4">
                       <h4 className="text-xs uppercase font-mono text-blue-400 font-black mb-3">Trust Node Technical Architecture & Stack</h4>
                       
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-[10.5px] font-mono text-left border-collapse">
-                          <thead>
-                            <tr className="border-b border-slate-800 text-slate-500">
-                              <th className="pb-2">Architectural Layer</th>
-                              <th className="pb-2">Technology Used</th>
-                              <th className="pb-2">Technical Rationale & Capability</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-850/80 text-slate-350">
-                            <tr>
-                              <td className="py-2.5 font-bold text-slate-200">Local Streaming Bus</td>
-                              <td className="py-2.5 text-blue-400">Apache Kafka Streams</td>
-                              <td className="py-2.5 text-slate-400">Ensures continuous low-latency ingestion of CRM and cell tower event feeds.</td>
-                            </tr>
-                            <tr>
-                              <td className="py-2.5 font-bold text-slate-200">State Store Database</td>
-                              <td className="py-2.5 text-purple-400">Embedded RocksDB</td>
-                              <td className="py-2.5 text-slate-400">Serves in-memory rolling time-window feature calculations with sub-millisecond writes.</td>
-                            </tr>
-                            <tr>
-                              <td className="py-2.5 font-bold text-slate-200">Local Cold Storage</td>
-                              <td className="py-2.5 text-amber-400">Apache Iceberg / S3</td>
-                              <td className="py-2.5 text-slate-400">Allows offline models training on conformed historical metadata without database lock-in.</td>
-                            </tr>
-                            <tr>
-                              <td className="py-2.5 font-bold text-slate-200">Cryptographic Signing</td>
-                              <td className="py-2.5 text-red-400">JOSE JWE (RFC 7516)</td>
-                              <td className="py-2.5 text-slate-400">Envelopes output features in an encrypted container signed by the node's private key.</td>
-                            </tr>
-                            <tr>
-                              <td className="py-2.5 font-bold text-slate-200">Network Transport</td>
-                              <td className="py-2.5 text-emerald-400">gRPC over mTLS 1.3</td>
-                              <td className="py-2.5 text-slate-400">Mutual SSL certificate validation secures connection directly to the central clearinghouse.</td>
-                            </tr>
-                          </tbody>
-                        </table>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-[10.5px] font-mono text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-800 text-slate-500">
+                                <th className="pb-2">Layer</th>
+                                <th className="pb-2">Technology</th>
+                                <th className="pb-2">Rationale</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-850/80 text-slate-350">
+                              <tr>
+                                <td className="py-2 font-bold text-slate-200">Streaming</td>
+                                <td className="py-2 text-blue-400">Kafka Streams</td>
+                                <td className="py-2 text-[10px]">Ingestion of event telemetry.</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 font-bold text-slate-200">State</td>
+                                <td className="py-2 text-purple-400">RocksDB</td>
+                                <td className="py-2 text-[10px]">Low-latency stateful features.</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 font-bold text-slate-200">Storage</td>
+                                <td className="py-2 text-amber-400">Apache Iceberg</td>
+                                <td className="py-2 text-[10px]">Conformed tables local sync.</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 font-bold text-slate-200">Signing</td>
+                                <td className="py-2 text-red-400">JOSE JWE</td>
+                                <td className="py-2 text-[10px]">Payload encrypt envelopes.</td>
+                              </tr>
+                              <tr>
+                                <td className="py-2 font-bold text-slate-200">Transport</td>
+                                <td className="py-2 text-emerald-400">mTLS 1.3 gRPC</td>
+                                <td className="py-2 text-[10px]">Secure node communication.</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg flex flex-col justify-center">
+                          <span className="text-[9px] text-slate-400 font-mono block mb-1.5 uppercase font-bold text-center">Trust Node Internal Blueprint Diagram</span>
+                          <img 
+                            src="/trust_node_arch.png" 
+                            alt="Trust Node Technical Architecture" 
+                            className="w-full rounded border border-slate-800 bg-slate-950 max-h-56 object-contain"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1052,52 +1062,43 @@ export default function FederatedTrustNetwork() {
                     <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 space-y-4">
                       <h4 className="text-xs uppercase font-mono text-blue-400 font-black">Node & Central Intelligence Interaction Protocol</h4>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        
-                        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-850 space-y-2">
-                          <h5 className="text-[11px] font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center">
-                            <Share2 className="w-3.5 h-3.5 mr-1 text-emerald-400" />
-                            <span>1. Data Plane: Real-Time Signal Exchange</span>
-                          </h5>
-                          <ul className="space-y-1.5 text-[10px] text-slate-400 leading-relaxed font-mono">
-                            <li>• Bank initiates credit query to central EnStream platform.</li>
-                            <li>• Central router queries Rogers, Bell, and Telus nodes simultaneously.</li>
-                            <li>• Nodes lookup computed features (SIM Swap, Tenure) in local memory.</li>
-                            <li>• Nodes encrypt payload using gRPC/JWE, returning anonymous values.</li>
-                            <li>• Central platform aggregates signals, generates score, caches in Redis.</li>
-                          </ul>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="space-y-3">
+                          <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-850 space-y-2">
+                            <h5 className="text-[11px] font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center">
+                              <Share2 className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+                              <span>1. Data Plane: Real-Time Signal Exchange</span>
+                            </h5>
+                            <ul className="space-y-1 text-[9.5px] text-slate-400 leading-normal font-mono">
+                              <li>• Bank query triggers central platform scoring request.</li>
+                              <li>• Central gateway broadcasts requests to Rogers/Bell/Telus nodes.</li>
+                              <li>• Nodes perform secure lookups on local feature aggregates.</li>
+                              <li>• Payload encrypted in JWE containers via secure gRPC.</li>
+                              <li>• Central engine combines features and updates the serving cache.</li>
+                            </ul>
+                          </div>
+
+                          <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-850 space-y-2">
+                            <h5 className="text-[11px] font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center">
+                              <Settings className="w-3.5 h-3.5 mr-1 text-blue-400" />
+                              <span>2. Control Plane: Orchestration & Policy</span>
+                            </h5>
+                            <ul className="space-y-1 text-[9.5px] text-slate-400 leading-normal font-mono">
+                              <li>• Central platform aggregates node heartbeats and active latencies.</li>
+                              <li>• Pushes updated model weights (e.g. XGBoost) down to nodes.</li>
+                              <li>• Configures JSON schema validation contracts remotely.</li>
+                              <li>• Tracks real-time API query performance and cost.</li>
+                            </ul>
+                          </div>
                         </div>
 
-                        <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-850 space-y-2">
-                          <h5 className="text-[11px] font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center">
-                            <Settings className="w-3.5 h-3.5 mr-1 text-blue-400" />
-                            <span>2. Control Plane: Orchestration & Policy</span>
-                          </h5>
-                          <ul className="space-y-1.5 text-[10px] text-slate-400 leading-relaxed font-mono">
-                            <li>• Central system monitors node heartbeats and active latencies.</li>
-                            <li>• Control plane pushes updated ML model weights and scoring rules.</li>
-                            <li>• Pushes updated JSON schema data contract files to nodes.</li>
-                            <li>• Configures logging parameters and logs compliance checks.</li>
-                            <li>• Initiates automated local node reconciliation during gaps.</li>
-                          </ul>
-                        </div>
-
-                      </div>
-
-                      {/* Visual Flow diagram */}
-                      <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-850 flex flex-col md:flex-row items-center justify-between text-[9px] font-mono gap-4 text-slate-400">
-                        <div className="text-center bg-slate-950 p-2.5 rounded border border-slate-800 w-full md:w-auto">
-                          <span className="text-slate-500 block mb-0.5">LOCAL PROVIDER</span>
-                          <span className="text-slate-200 font-bold">EnStream Trust Node</span>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-slate-600 hidden md:block" />
-                        <div className="text-center px-3 py-1.5 bg-blue-600/10 border border-blue-500/20 rounded text-blue-400 font-bold">
-                          gRPC Signal Tunnel (JWE Encrypted Payload)
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-slate-600 hidden md:block" />
-                        <div className="text-center bg-slate-950 p-2.5 rounded border border-slate-800 w-full md:w-auto">
-                          <span className="text-slate-500 block mb-0.5">ENSTREAM CENTRAL</span>
-                          <span className="text-slate-200 font-bold">Federation & Scoring Engine</span>
+                        <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg flex flex-col justify-center">
+                          <span className="text-[9px] text-slate-400 font-mono block mb-1.5 uppercase font-bold text-center">Central Interaction Topology Diagram</span>
+                          <img 
+                            src="/interaction_arch.png" 
+                            alt="Trust Node & Central Interaction Architecture" 
+                            className="w-full rounded border border-slate-800 bg-slate-950 max-h-56 object-contain"
+                          />
                         </div>
                       </div>
                     </div>

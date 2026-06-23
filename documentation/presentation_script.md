@@ -183,10 +183,54 @@ Furthermore, unlike legacy integrators like **Wipro or Tech Mahindra** who build
 
 The interactive sandbox, low-latency caching visualizer, DQ audit ledgers, and graph network walk show that the EnStream Fraud Platform is fully prepared to deliver real-time, governed trust scoring.
 
+Now, let's step into the next-generation evolution of our platform, directly addressing executive feedback on data sovereignty, real-time intelligence, and ML observability: the **Federated Trust Network**.
+
+I will select the **Federated Network Story** sub-tab in our **Technical Working** console."
+
+### Speaker Action Log
+*   **Click Action**: Click on the **Federated Network Story** sub-tab.
+*   **Gesture**: Point to the slide navigation header at the top.
+
+---
+
+## [28:00 - 32:00] Segment 8: Federated Trust Network & Platform Evolution
+
+### Spoken Narrative
+"You are now looking at our executive storyboard and interactive simulator. This story outlines how EnStream evolves from a centralized scoring model into a decentralized Federated Trust Intelligence Network. Let's walk through the answers to the key executive questions:
+
+First, on **Data Sovereignty** (Screens 1 & 2): We demonstrate how data remains local. Raw billing, subscriber registry, and CRM databases stay within each carrier's boundaries (Rogers, Bell, Telus, Banks, and Fraud Bureau). Masked data contracts scrub all PII metadata, ensuring no private customer information ever leaves their systems.
+
+Second, on **Federated Node Architecture** (Screens 3 & 4): Each participant runs a local EnStream Trust Node. This node connects locally to database streams (Oracle, Snowflake, Kafka) and runs a local feature engine, storing aggregates in local feature stores. The node exposes only approved anonymized features through a secure Federation Gateway. We can run a live scoring request on our simulator here. Rogers returns stable tenure and device trust, Bell returns ownership stability, and the Fraud Bureau returns exposure index. When I click compute, the exchange layer aggregates these features in under 100ms with zero raw data exchanged. If Rogers reports 3 recent SIM swaps, watch how the score instantly adapts to High Risk.
+
+Third, on **Real-Time Latency & Caching** (Screens 5 & 6): Pre-computation is the key to sub-second performance. We show the event-driven lifecycle: a local SIM swap triggers local node re-evaluation, pushing changes directly to the Redis cache. The API serves the pre-computed score instantly.
+
+Fourth, on **Unstructured Data** (Screen 7): We show how our NLP processor parses raw investigation notes and fraud reports, extracts entities (MSISDNs, IP addresses), and generates numeric risk features (such as Risk Sentiment index) for the scoring engine.
+
+Fifth, on **ML Observability & Orchestration** (Screens 8 & 9): We showcase our drift monitoring dashboards using Arize Phoenix and Evidently to track input feature distribution changes via PSI metrics. We also see the Incedo Model Orchestrator dynamically evaluating candidate models based on accuracy, latency, and freshness weights.
+
+Sixth, on **Participant Onboarding** (Screen 11 & 12): We demonstrate the self-service onboarding wizard. A new carrier like Rogers Quebec can name their node, select connectivity, specify features, and deploy a container in under 30 minutes, showing minimal development effort.
+
+Ultimately, EnStream evolves from a centralized scoring model into a Federated Trust Network where participants retain ownership of their data, Trust Nodes generate intelligence locally, approved signals are exchanged securely, trust scores are continuously updated, and enterprise customers receive real-time, explainable trust decisions and proactive fraud intelligence."
+
+### Speaker Action Log
+*   **Visual Direction**: Step through the slides using the slide selector dropdown.
+*   **Click Action**: Set Rogers SIM Swaps to 3, then click **"RUN FEDERATED SCORING REQUEST"**. Point out the updated high-risk score.
+*   **Click Action**: Go to Screen 5, click **"SIMULATE EVENTS INGRESS"** and point to the step-by-step latency flow.
+*   **Click Action**: Go to Screen 7, click **"EXTRACT ENTITIES & EMBEDDINGS"** and point to the parsed text output features.
+*   **Click Action**: Go to Screen 9, adjust the **"Latency efficiency"** slider and point to the active model selection.
+*   **Click Action**: Go to Screen 12, fill in "Rogers-Quebec", click **"CONTINUE"**, select features, and click **"Provision Node Container"** to watch the animated CLI deployment logs.
+
+---
+
+## [32:00 - 35:00] Segment 9: Conclusion & Q&A
+
+### Spoken Narrative
+"In conclusion, this phased transition roadmap and the federated network design ensure a secure, high-performance path to our target architecture. 
+
+Unlike legacy integrators who build closed databases, our platform utilizes open-table formats and decentralized containers to prevent vendor lock-in and secure data sovereignty.
+
 I am now happy to open the floor to any questions you may have. Thank you."
 
 ### Speaker Action Log
-*   **Click Action**: Click on **Technical Working** in the left sidebar.
-*   **Subtab Action**: Click on the **Vendor Brief & Feedback** subtab.
-*   **Visual Direction**: Direct the audience to the **Competitive Parity (vs Subex)** and **Integrator Trade-offs** cards.
+*   **Click Action**: Click on the **Vendor Brief & Feedback** subtab.
 *   **Gesture**: Fold arms, smile, and look at the audience to receive questions.

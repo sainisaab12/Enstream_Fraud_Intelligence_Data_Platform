@@ -5,9 +5,10 @@ import {
   CheckCircle, FileText, Settings, ShieldAlert, GitBranch, Play, PlayCircle, Loader, Terminal,
   TrendingUp, BarChart2, Shield, AlertCircle, RefreshCw, Lock, Unlock, Clock, ArrowRight, Eye, EyeOff
 } from "lucide-react";
+import FederatedTrustNetwork from "./FederatedTrustNetwork";
 
 export default function TechnicalArchitecture() {
-  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws" | "builder" | "framework">("evolution");
+  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws" | "builder" | "framework" | "federation">("evolution");
   const [selectedCodeSection, setSelectedCodeSection] = useState<string>("dq");
   
   // Trace console states
@@ -1123,6 +1124,14 @@ HAVING
             }`}
           >
             AWS Integration
+          </button>
+          <button
+            onClick={() => setActiveSubTab("federation")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+              activeSubTab === "federation" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            Federated Network Story
           </button>
         </div>
       </div>
@@ -3125,6 +3134,11 @@ HAVING
             </div>
           </div>
         </div>
+      )}
+
+      {/* SUB-TAB 9: FEDERATED TRUST NETWORK */}
+      {activeSubTab === "federation" && (
+        <FederatedTrustNetwork />
       )}
 
     </div>

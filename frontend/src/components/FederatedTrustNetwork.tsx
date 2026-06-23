@@ -75,6 +75,285 @@ export default function FederatedTrustNetwork() {
   // --- Federated Trust Node Architecture subtab states ---
   const [nodeSubTab, setNodeSubTab] = useState<"functional" | "technical" | "interaction">("functional");
   const [selectedFuncBlock, setSelectedFuncBlock] = useState<string>("ingress");
+  const [activeTechCard, setActiveTechCard] = useState<"kafka" | "rocksdb" | "iceberg" | "jwe" | "grpc">("kafka");
+  const [activePayloadScenario, setActivePayloadScenario] = useState<"normal" | "sim_swap" | "location">("normal");
+  const [pipelineStep, setPipelineStep] = useState<number>(0);
+  const [isPipelineRunning, setIsPipelineRunning] = useState<boolean>(false);
+  const [interactionConsoleLogs, setInteractionConsoleLogs] = useState<string[]>([
+    "[SYSTEM] Terminal initialized. Waiting for protocol execution commands..."
+  ]);
+  const [interactionPlane, setInteractionPlane] = useState<"data" | "control">("data");
+
+  // Ingestion Scenarios Data
+  const scenariosData = {
+    normal: {
+      name: "Scenario A: Normal Subscriber Activity",
+      ingress: {
+        description: "Standard attach event containing plaintext identifiers. Ingested locally without forwarding.",
+        input: `{
+  "msisdn": "+14165550011",
+  "imsi": "302720999999999",
+  "event_type": "CELL_ATTACH",
+  "timestamp": "2026-06-23T17:13:54Z",
+  "network_id": "ROGERS_ONT_04",
+  "cell_tower_id": "TOR_SUBURB_12",
+  "imei": "358764091234567"
+}`,
+        output: `{
+  "msisdn": "+14165550011",
+  "imsi": "302720999999999",
+  "event_type": "CELL_ATTACH",
+  "timestamp": "2026-06-23T17:13:54Z"
+}`
+      },
+      engine: {
+        description: "Stateful streaming processor compiles aggregates inside local RocksDB state. Flagged: 0 SIM swaps.",
+        input: `{
+  "msisdn": "+14165550011",
+  "event_type": "CELL_ATTACH",
+  "timestamp": "2026-06-23T17:13:54Z"
+}`,
+        output: `{
+  "subscriber_key": "rogers_sub_0011",
+  "sim_swap_count_2h": 0,
+  "device_switch_count_24h": 0,
+  "location_change_count_1h": 1,
+  "network_tenure_days": 1850
+}`
+      },
+      privacy: {
+        description: "PII Shield sanitizes data. Plaintext identifiers hashed via SHA-256. Plaintext tower redacted.",
+        input: `{
+  "subscriber_key": "rogers_sub_0011",
+  "sim_swap_count_2h": 0,
+  "device_switch_count_24h": 0
+}`,
+        output: `{
+  "hashed_msisdn": "6d3c051cf57a0bc077b9497e59b922119eb506a5b6c86720bfcd4b397e50b1ab",
+  "sim_swap_count_2h": 0,
+  "device_switch_count_24h": 0,
+  "location_change_count_1h": 1,
+  "data_privacy_consent": true
+}`
+      },
+      gateway: {
+        description: "Aggregates sealed inside secure JOSE JWE envelope. Decryptable only by Central Platform private key.",
+        input: `{
+  "hashed_msisdn": "6d3c051cf57a0bc077b9497e59b922119eb506a5b6c86720bfcd4b397e50b1ab",
+  "sim_swap_count_2h": 0
+}`,
+        output: `"eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkExMjhHQ00iLCJraWQiOiJub2RlLXJvZ2Vycy0wMSJ9.
+d8wE_g92k7sL9aKx2kd8s2B...[Encrypted Payload]...
+.c928KdBv7ad81aKsd"`
+      }
+    },
+    sim_swap: {
+      name: "Scenario B: Suspicious SIM Swap Sequence",
+      ingress: {
+        description: "SIM swap request telemetry. Triggers strict validation paths due to hijacking signatures.",
+        input: `{
+  "msisdn": "+14165558899",
+  "imsi": "302720888888888",
+  "event_type": "SIM_SWAP_REQUEST",
+  "timestamp": "2026-06-23T17:13:54Z",
+  "network_id": "ROGERS_ONT_04",
+  "cell_tower_id": "TOR_DOWNTOWN_09",
+  "imei": "860922041234567"
+}`,
+        output: `{
+  "msisdn": "+14165558899",
+  "imsi": "302720888888888",
+  "event_type": "SIM_SWAP_REQUEST",
+  "timestamp": "2026-06-23T17:13:54Z"
+}`
+      },
+      engine: {
+        description: "Stateful engine calculates SIM swap aggregates. Flagged: 3 swaps detected inside 2 hours.",
+        input: `{
+  "msisdn": "+14165558899",
+  "event_type": "SIM_SWAP_REQUEST",
+  "timestamp": "2026-06-23T17:13:54Z"
+}`,
+        output: `{
+  "subscriber_key": "rogers_sub_8899",
+  "sim_swap_count_2h": 3,
+  "device_switch_count_24h": 2,
+  "location_change_count_1h": 2,
+  "network_tenure_days": 42
+}`
+      },
+      privacy: {
+        description: "PII details removed. Hashed MSISDN generated. Data contract validates schema integrity.",
+        input: `{
+  "subscriber_key": "rogers_sub_8899",
+  "sim_swap_count_2h": 3,
+  "device_switch_count_24h": 2
+}`,
+        output: `{
+  "hashed_msisdn": "ae3f051cde7a0bc077b9497e59b922119eb506a5b6c86720bfcd4b397e50b2ff",
+  "sim_swap_count_2h": 3,
+  "device_switch_count_24h": 2,
+  "location_change_count_1h": 2,
+  "data_privacy_consent": true
+}`
+      },
+      gateway: {
+        description: "High-risk features package compiled, signed, encrypted using JWE envelope for egress.",
+        input: `{
+  "hashed_msisdn": "ae3f051cde7a0bc077b9497e59b922119eb506a5b6c86720bfcd4b397e50b2ff",
+  "sim_swap_count_2h": 3
+}`,
+        output: `"eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkExMjhHQ00iLCJraWQiOiJub2RlLXJvZ2Vycy0wMSJ9.
+yP8q_x91h82Ls7ka9s1K8fJ...[Encrypted Payload]...
+.a88dKdBv7ad81aKaa"`
+      }
+    },
+    location: {
+      name: "Scenario C: High-Frequency Location Hopping",
+      ingress: {
+        description: "Incoming cell handover event. Telemetry shows Vancouver location, previous log was Montreal 30m ago.",
+        input: `{
+  "msisdn": "+14165557766",
+  "imsi": "302720777777777",
+  "event_type": "CELL_HANDOVER",
+  "timestamp": "2026-06-23T17:13:54Z",
+  "network_id": "ROGERS_ONT_04",
+  "cell_tower_id": "VAN_AIRPORT_01",
+  "imei": "358764095555555"
+}`,
+        output: `{
+  "msisdn": "+14165557766",
+  "imsi": "302720777777777",
+  "event_type": "CELL_HANDOVER",
+  "timestamp": "2026-06-23T17:13:54Z"
+}`
+      },
+      engine: {
+        description: "Calculates impossible travel. Flagged: Vancouver and Montreal tower handovers within 30m indicates physical travel impossibility.",
+        input: `{
+  "msisdn": "+14165557766",
+  "event_type": "CELL_HANDOVER",
+  "timestamp": "2026-06-23T17:13:54Z"
+}`,
+        output: `{
+  "subscriber_key": "rogers_sub_7766",
+  "sim_swap_count_2h": 0,
+  "device_switch_count_24h": 1,
+  "location_change_count_1h": 4,
+  "impossible_travel_flag": true,
+  "network_tenure_days": 920
+}`
+      },
+      privacy: {
+        description: "Cleans PII telemetry. Retains impossible travel flag as a numerical feature. MSISDN is hashed.",
+        input: `{
+  "subscriber_key": "rogers_sub_7766",
+  "impossible_travel_flag": true
+}`,
+        output: `{
+  "hashed_msisdn": "bc8c051cf57a0bc077b9497e59b922119eb506a5b6c86720bfcd4b397e50b9aa",
+  "sim_swap_count_2h": 0,
+  "device_switch_count_24h": 1,
+  "location_change_count_1h": 4,
+  "impossible_travel_flag": true,
+  "data_privacy_consent": true
+}`
+      },
+      gateway: {
+        description: "Signs and encrypts feature aggregates with JWE container prior to tunnel transmission.",
+        input: `{
+  "hashed_msisdn": "bc8c051cf57a0bc077b9497e59b922119eb506a5b6c86720bfcd4b397e50b9aa",
+  "impossible_travel_flag": true
+}`,
+        output: `"eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkExMjhHQ00iLCJraWQiOiJub2RlLXJvZ2Vycy0wMSJ9.
+h9W2_z19a82LsK92kLa18a8...[Encrypted Payload]...
+.b288KdBv7ad81aKss"`
+      }
+    }
+  };
+
+  const addConsoleLog = (logLines: string[]) => {
+    const timestamp = new Date().toISOString().split("T")[1].substring(0, 8);
+    const formatted = logLines.map(line => `[${timestamp}] ${line}`);
+    setInteractionConsoleLogs(prev => [...prev, ...formatted]);
+  };
+
+  const triggerScoringRequest = () => {
+    const activeMsisdnHash = activePayloadScenario === "normal" 
+      ? "6d3c051c..." 
+      : activePayloadScenario === "sim_swap" 
+        ? "ae3f051c..." 
+        : "bc8c051c...";
+    addConsoleLog([
+      `[GRPC] Inbound connection requested by Central Platform (IP: 10.120.44.8).`,
+      `[TLS] Establishing mTLS 1.3 channel. Negotiated cipher: TLS_CHACHA20_POLY1305_SHA256`,
+      `[TLS] Client cert verified: CN=central.exchange.enstream.ca, O=EnStream Alliance`,
+      `[GRPC] Calling RPC: QueryFeatures(hashed_msisdn = "${activeMsisdnHash}", query_id = "req_q_${Math.floor(Math.random() * 90000 + 10000)}")`,
+      `[ROCKSDB] Query state store. Key found in features namespace.`,
+      `[SHIELD] Data Contract validator invoked. Scanned fields: 0 PII violations found.`,
+      `[CRYPT] Wrapping payload into RFC 7516 JWE Envelope. Encryption algorithm: AES-GCM-128`,
+      `[GRPC] Returning encrypted envelope payload. RPC status code: 200 OK`,
+      `[GRPC] Connection gracefully closed. Egress network latency: 6.4ms.`
+    ]);
+  };
+
+  const triggerConsentRevocation = () => {
+    addConsoleLog([
+      `[GRPC] Inbound connection requested by Central Platform (IP: 10.120.44.8).`,
+      `[TLS] mTLS connection established with CN=central.exchange.enstream.ca`,
+      `[GRPC] Calling RPC: QueryFeatures(hashed_msisdn = "ae3f051c...", query_id = "req_q_${Math.floor(Math.random() * 90000 + 10000)}")`,
+      `[ROCKSDB] Query state store. Subscriber records found.`,
+      `[SHIELD] Checking local consent directory (ledger storage)...`,
+      `[WARNING] Consent status: DENIED by subscriber. Enforcement policy active.`,
+      `[SHIELD] Data Contract Validation Error: POLICY_VIOLATION - CONSENT_REVOKED. Payload blocked.`,
+      `[GRPC] Aborting RPC. Returning gRPC Status: PermissionDenied (403).`,
+      `[AUDIT] Log entry appended to audit ledger: BLOCKED_QUERY_CONSENT_REVOKED for hash "ae3f051c..."`
+    ]);
+  };
+
+  const triggerModelWeightPush = () => {
+    addConsoleLog([
+      `[CONTROL] Heartbeat request received from Central Platform Control Plane.`,
+      `[CONTROL] Node status reported: HEALTHY | RocksDB partitions: 100% synced.`,
+      `[CONTROL] Push instruction received: UPDATE_MODEL_ORCHESTRATOR_WEIGHTS`,
+      `[MODEL] Downloading latest weights from registry: Ensemble-DeepTrust-v3.2-Beta`,
+      `[MODEL] Source: central-model-registry.enstream.ca/models/v32_beta.bin`,
+      `[MODEL] Verifying payload signature: SHA-256 checksum matched.`,
+      `[MODEL] Hot-swapping weights in local inference cache. Previous version: v3.1`,
+      `[SUCCESS] Weights updated. Dynamic routing table updated: Accuracy=8, Latency=6, Explainability=6.`
+    ]);
+  };
+
+  const triggerSchemaComplianceAudit = () => {
+    addConsoleLog([
+      `[CONTROL] Initiating automated local data compliance scanner...`,
+      `[AUDIT] Scanning active RocksDB schemas... 12 partitions scanned. 0 structural errors.`,
+      `[AUDIT] Scanning Apache Iceberg metadata... Metadata version 4 verified.`,
+      `[SHIELD] Running PII regex sweep over feature values...`,
+      `[SHIELD] Scanning columns: hashed_msisdn, sim_swap_count_2h, device_switch_count_24h`,
+      `[SHIELD] 0 plaintext phone numbers (MSISDN) detected.`,
+      `[SHIELD] 0 plaintext IP addresses detected.`,
+      `[SHIELD] 0 plaintext customer names or emails detected.`,
+      `[SUCCESS] All schemas fully compliant with Zero-PII EnStream Data Sharing agreement. Compliance signature generated.`
+    ]);
+  };
+
+  const runPipelineSimulation = () => {
+    setPipelineStep(1);
+    setIsPipelineRunning(true);
+  };
+
+  useEffect(() => {
+    let timer: any;
+    if (isPipelineRunning && pipelineStep > 0 && pipelineStep < 4) {
+      timer = setTimeout(() => {
+        setPipelineStep((prev) => prev + 1);
+      }, 2000);
+    } else if (pipelineStep === 4) {
+      setIsPipelineRunning(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isPipelineRunning, pipelineStep]);
 
   // --- Onboarding Features Option List ---
   const availableFeatures = [
@@ -865,15 +1144,15 @@ export default function FederatedTrustNetwork() {
                 <div className="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs shrink-0 select-none">
                   <button
                     onClick={() => setNodeSubTab("functional")}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+                    className={`flex-1 py-2 text-center rounded-lg font-bold transition-all whitespace-nowrap ${
                       nodeSubTab === "functional" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
                     }`}
                   >
-                    Functional Architecture
+                    Functional Ingestion Pipeline
                   </button>
                   <button
                     onClick={() => setNodeSubTab("technical")}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+                    className={`flex-1 py-2 text-center rounded-lg font-bold transition-all whitespace-nowrap ${
                       nodeSubTab === "technical" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
                     }`}
                   >
@@ -881,226 +1160,449 @@ export default function FederatedTrustNetwork() {
                   </button>
                   <button
                     onClick={() => setNodeSubTab("interaction")}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+                    className={`flex-1 py-2 text-center rounded-lg font-bold transition-all whitespace-nowrap ${
                       nodeSubTab === "interaction" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
                     }`}
                   >
-                    Central Platform Interaction
+                    Interaction Protocol Console
                   </button>
                 </div>
 
-                {/* FUNCTIONAL ARCHITECTURE SUB-TAB */}
+                {/* SUBTAB 1: FUNCTIONAL INGESTION PIPELINE */}
                 {nodeSubTab === "functional" && (
                   <div className="space-y-4 animate-fadeIn">
-                    <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl"></div>
-                      <h4 className="text-xs uppercase font-mono text-blue-400 font-black mb-3">Trust Node Functional Ingestion & In-Memory Pipeline</h4>
+                    <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 relative overflow-hidden space-y-4">
                       
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <button 
-                          onClick={() => setSelectedFuncBlock("ingress")}
-                          className={`p-3.5 rounded-lg border text-left transition-all ${
-                            selectedFuncBlock === "ingress" 
-                              ? "bg-blue-600/10 border-blue-500 text-blue-300" 
-                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-350"
-                          }`}
-                        >
-                          <Database className="w-5 h-5 text-blue-500 mb-1" />
-                          <h5 className="text-[10px] font-bold uppercase">1. Data Ingress</h5>
-                          <p className="text-[8.5px] mt-1 leading-normal text-slate-450">Ingests local CRM, billing transaction sequences, and device event telemetry.</p>
-                        </button>
-
-                        <button 
-                          onClick={() => setSelectedFuncBlock("engine")}
-                          className={`p-3.5 rounded-lg border text-left transition-all ${
-                            selectedFuncBlock === "engine" 
-                              ? "bg-purple-600/10 border-purple-500 text-purple-300" 
-                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-350"
-                          }`}
-                        >
-                          <Cpu className="w-5 h-5 text-purple-500 mb-1" />
-                          <h5 className="text-[10px] font-bold uppercase">2. Feature Engine</h5>
-                          <p className="text-[8.5px] mt-1 leading-normal text-slate-450">Calculates SIM swap counts, device network sizes, and tenure ratios statefully.</p>
-                        </button>
-
-                        <button 
-                          onClick={() => setSelectedFuncBlock("privacy")}
-                          className={`p-3.5 rounded-lg border text-left transition-all ${
-                            selectedFuncBlock === "privacy" 
-                              ? "bg-red-600/10 border-red-500 text-red-300" 
-                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-350"
-                          }`}
-                        >
-                          <Shield className="w-5 h-5 text-red-500 mb-1" />
-                          <h5 className="text-[10px] font-bold uppercase">3. Privacy Shield</h5>
-                          <p className="text-[8.5px] mt-1 leading-normal text-slate-450">Cryptographically hashes MSISDN/IMEI. Enforces Zero-PII contract boundaries.</p>
-                        </button>
-
-                        <button 
-                          onClick={() => setSelectedFuncBlock("gateway")}
-                          className={`p-3.5 rounded-lg border text-left transition-all ${
-                            selectedFuncBlock === "gateway" 
-                              ? "bg-emerald-600/10 border-emerald-500 text-emerald-300" 
-                              : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-350"
-                          }`}
-                        >
-                          <Share2 className="w-5 h-5 text-emerald-500 mb-1" />
-                          <h5 className="text-[10px] font-bold uppercase">4. Federation Gate</h5>
-                          <p className="text-[8.5px] mt-1 leading-normal text-slate-450">Exposes pre-computed conformed features. Zero raw data shared.</p>
-                        </button>
+                      {/* Scenario Picker */}
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-850">
+                        <div>
+                          <span className="text-[10px] text-slate-500 uppercase font-mono block font-bold">Select Telemetry Scenario</span>
+                          <span className="text-xs font-bold text-slate-200">{scenariosData[activePayloadScenario].name}</span>
+                        </div>
+                        <div className="flex space-x-2 shrink-0">
+                          <button
+                            onClick={() => { setActivePayloadScenario("normal"); setPipelineStep(1); }}
+                            className={`px-3 py-1.5 rounded text-[10px] font-mono font-bold transition-all ${
+                              activePayloadScenario === "normal" ? "bg-blue-600/30 text-blue-400 border border-blue-500/40" : "bg-slate-950 text-slate-450 border border-slate-800 hover:text-slate-300"
+                            }`}
+                          >
+                            Normal Attach
+                          </button>
+                          <button
+                            onClick={() => { setActivePayloadScenario("sim_swap"); setPipelineStep(1); }}
+                            className={`px-3 py-1.5 rounded text-[10px] font-mono font-bold transition-all ${
+                              activePayloadScenario === "sim_swap" ? "bg-purple-600/30 text-purple-400 border border-purple-500/40" : "bg-slate-950 text-slate-450 border border-slate-800 hover:text-slate-300"
+                            }`}
+                          >
+                            SIM Swap Attack
+                          </button>
+                          <button
+                            onClick={() => { setActivePayloadScenario("location"); setPipelineStep(1); }}
+                            className={`px-3 py-1.5 rounded text-[10px] font-mono font-bold transition-all ${
+                              activePayloadScenario === "location" ? "bg-amber-600/30 text-amber-400 border border-amber-500/40" : "bg-slate-950 text-slate-450 border border-slate-800 hover:text-slate-300"
+                            }`}
+                          >
+                            Location Hop
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Detail card of selected block */}
-                      <div className="mt-4 bg-slate-900/60 p-4 rounded-xl border border-slate-850 text-xs text-slate-300">
-                        {selectedFuncBlock === "ingress" && (
-                          <div>
-                            <span className="text-blue-400 font-bold block mb-1">Functional Module: Data Ingress (Local Database Connections)</span>
-                            Ingests transaction metadata directly from local relational databases, network cell tower logs, and billing files. Standard connectors pull logs from internal network feeds without forwarding records outside the carrier boundaries. 
-                            <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center space-x-2">
-                              <span>✓ Isolation: Absolute</span>
-                              <span>• Ingress SLA: &lt; 2 minutes</span>
-                              <span>• CDC Tracking: Enabled</span>
-                            </div>
-                          </div>
-                        )}
-                        {selectedFuncBlock === "engine" && (
-                          <div>
-                            <span className="text-purple-400 font-bold block mb-1">Functional Module: Stateful Feature Engine</span>
-                            Builds rolling time-window feature variables. For example, counting SIM card swap requests in the last 2 hours, tracking billing address consistency scores, and computing hardware change frequency indices. These are calculated locally to verify device integrity in real-time.
-                            <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center space-x-2">
-                              <span>✓ Memory Engine: Redis/RocksDB</span>
-                              <span>• Processing Latency: &lt; 10ms</span>
-                            </div>
-                          </div>
-                        )}
-                        {selectedFuncBlock === "privacy" && (
-                          <div>
-                            <span className="text-red-400 font-bold block mb-1">Functional Module: Privacy Shield & Data Contracts</span>
-                            Encrypts or hashes identity attributes into secure cryptographic IDs. Strips plain-text subscriber names, exact IP values, street addresses, and social identifiers. It validates feature output payloads against data contracts to ensure no raw PII ever escapes.
-                            <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center space-x-2">
-                              <span>✓ Masking: Cryptographic Hashing</span>
-                              <span>• Compliance: GDPR, PIPEDA, HIPAA</span>
-                            </div>
-                          </div>
-                        )}
-                        {selectedFuncBlock === "gateway" && (
-                          <div>
-                            <span className="text-emerald-400 font-bold block mb-1">Functional Module: Federation Gateway Egress</span>
-                            Signs and packs conformed, anonymized feature arrays. It opens a secure TLS socket tunnel with the central EnStream Platform, publishing trust signals (e.g., SIM_SWAP_COUNT_2H = 0, TENURE_DAYS = 2920) upon request or event triggers.
-                            <div className="mt-2 text-[10px] text-slate-400 font-mono flex items-center space-x-2">
-                              <span>✓ Encryption: JWE Envelope</span>
-                              <span>• Port: 443/8443</span>
-                            </div>
-                          </div>
-                        )}
+                      {/* Pipeline steps indicator */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { key: "ingress", step: 1, name: "1. Raw Ingress", color: "text-blue-400 border-blue-500/20" },
+                          { key: "engine", step: 2, name: "2. RocksDB Engine", color: "text-purple-400 border-purple-500/20" },
+                          { key: "privacy", step: 3, name: "3. PII Shield", color: "text-red-400 border-red-500/20" },
+                          { key: "gateway", step: 4, name: "4. JWE Gate", color: "text-emerald-400 border-emerald-500/20" }
+                        ].map((stage) => {
+                          const isVisited = pipelineStep >= stage.step;
+                          const isCurrent = pipelineStep === stage.step || (pipelineStep === 0 && stage.step === 1);
+                          return (
+                            <button
+                              key={stage.key}
+                              onClick={() => { setPipelineStep(stage.step); setIsPipelineRunning(false); }}
+                              className={`p-2.5 rounded-lg border text-center transition-all ${
+                                isCurrent 
+                                  ? "bg-slate-900 border-blue-500/80 shadow-md scale-[1.02]" 
+                                  : isVisited 
+                                    ? "bg-slate-900/60 border-slate-800 opacity-90" 
+                                    : "bg-slate-950 border-slate-900 opacity-40 hover:opacity-60"
+                              }`}
+                            >
+                              <span className={`text-[10px] font-mono font-bold block ${stage.color}`}>{stage.name}</span>
+                              <span className="text-[8px] text-slate-500 block mt-0.5 uppercase tracking-wider">
+                                {isCurrent ? "Active" : isVisited ? "Processed" : "Pending"}
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
+
+                      {/* Active Step payload view */}
+                      {(() => {
+                        const stepKey = pipelineStep === 4 ? "gateway" : pipelineStep === 3 ? "privacy" : pipelineStep === 2 ? "engine" : "ingress";
+                        const stepData = scenariosData[activePayloadScenario][stepKey];
+                        return (
+                          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch mt-4">
+                            
+                            {/* Input Code Block */}
+                            <div className="md:col-span-5 flex flex-col space-y-1.5">
+                              <span className="text-[9px] font-mono text-slate-500 uppercase font-bold">Input Payload</span>
+                              <pre className="bg-slate-950 border border-slate-850 p-2.5 rounded-lg text-[9.5px] font-mono text-slate-300 overflow-x-auto h-40 leading-normal">
+                                {stepData.input}
+                              </pre>
+                            </div>
+
+                            {/* Center Flow arrow with details */}
+                            <div className="md:col-span-2 flex flex-col justify-center items-center text-center p-2 border border-slate-850/65 rounded-lg bg-slate-900/40 relative">
+                              <div className="absolute top-2 w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></div>
+                              <span className="text-[9px] font-mono text-slate-400 uppercase font-black tracking-wider block mb-1">Transform</span>
+                              <ArrowRight className="w-5 h-5 text-blue-500 animate-pulse my-1" />
+                              <p className="text-[9px] leading-tight text-slate-450 mt-1 max-w-xs">{stepData.description}</p>
+                            </div>
+
+                            {/* Output Code Block */}
+                            <div className="md:col-span-5 flex flex-col space-y-1.5">
+                              <span className="text-[9px] font-mono text-slate-500 uppercase font-bold">Output Result</span>
+                              <pre className="bg-slate-950 border border-slate-850 p-2.5 rounded-lg text-[9.5px] font-mono text-emerald-455 overflow-x-auto h-40 leading-normal">
+                                {stepData.output}
+                              </pre>
+                            </div>
+
+                          </div>
+                        );
+                      })()}
+
+                      {/* Controls */}
+                      <div className="flex justify-between items-center pt-3 border-t border-slate-900">
+                        <div className="text-[9px] font-mono text-slate-500">
+                          {isPipelineRunning ? "Running simulation timer..." : "Interactive Mode: Click steps or run simulation"}
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => { setPipelineStep(1); setIsPipelineRunning(false); }}
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 text-slate-350 text-[10px] font-mono font-bold rounded cursor-pointer"
+                          >
+                            Reset Step
+                          </button>
+                          <button
+                            onClick={runPipelineSimulation}
+                            disabled={isPipelineRunning}
+                            className="px-3.5 py-1.5 bg-blue-600/10 border border-blue-500/25 text-blue-400 hover:bg-blue-600 hover:text-slate-100 text-[10px] font-mono font-bold rounded flex items-center space-x-1.5 cursor-pointer shadow-md"
+                          >
+                            <Play className="w-3 h-3" />
+                            <span>Auto-Run Ingestion</span>
+                          </button>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
                 )}
 
-                {/* TECHNICAL STACK SPEC SUB-TAB */}
+                {/* SUBTAB 2: TECHNICAL STACK SPEC */}
                 {nodeSubTab === "technical" && (
                   <div className="space-y-4 animate-fadeIn">
                     <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 space-y-4">
-                      <h4 className="text-xs uppercase font-mono text-blue-400 font-black mb-3">Trust Node Technical Architecture & Stack</h4>
                       
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-[10.5px] font-mono text-left border-collapse">
-                            <thead>
-                              <tr className="border-b border-slate-800 text-slate-500">
-                                <th className="pb-2">Layer</th>
-                                <th className="pb-2">Technology</th>
-                                <th className="pb-2">Rationale</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-850/80 text-slate-350">
-                              <tr>
-                                <td className="py-2 font-bold text-slate-200">Streaming</td>
-                                <td className="py-2 text-blue-400">Kafka Streams</td>
-                                <td className="py-2 text-[10px]">Ingestion of event telemetry.</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 font-bold text-slate-200">State</td>
-                                <td className="py-2 text-purple-400">RocksDB</td>
-                                <td className="py-2 text-[10px]">Low-latency stateful features.</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 font-bold text-slate-200">Storage</td>
-                                <td className="py-2 text-amber-400">Apache Iceberg</td>
-                                <td className="py-2 text-[10px]">Conformed tables local sync.</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 font-bold text-slate-200">Signing</td>
-                                <td className="py-2 text-red-400">JOSE JWE</td>
-                                <td className="py-2 text-[10px]">Payload encrypt envelopes.</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 font-bold text-slate-200">Transport</td>
-                                <td className="py-2 text-emerald-400">mTLS 1.3 gRPC</td>
-                                <td className="py-2 text-[10px]">Secure node communication.</td>
-                              </tr>
-                            </tbody>
-                          </table>
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                        
+                        {/* Selector cards */}
+                        <div className="lg:col-span-4 flex flex-col space-y-2 select-none">
+                          {[
+                            { key: "kafka", name: "Kafka Streams / Flink SQL", desc: "Telemetry event ingress", icon: Database },
+                            { key: "rocksdb", name: "RocksDB State Store", desc: "Low-latency stateful store", icon: Cpu },
+                            { key: "iceberg", name: "Apache Iceberg Table", desc: "Conformed local analytics", icon: Table },
+                            { key: "jwe", name: "JOSE JWE Envelope", desc: "Cryptographic secure signing", icon: Shield },
+                            { key: "grpc", name: "gRPC Protobuf Schema", desc: "Transport layer contract", icon: Share2 }
+                          ].map((card) => {
+                            const Icon = card.icon;
+                            return (
+                              <button
+                                key={card.key}
+                                onClick={() => setActiveTechCard(card.key as any)}
+                                className={`p-3 rounded-xl border text-left transition-all ${
+                                  activeTechCard === card.key 
+                                    ? "bg-blue-600/10 border-blue-500 text-blue-300" 
+                                    : "bg-slate-900 border-slate-850 text-slate-400 hover:text-slate-355"
+                                }`}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <Icon className="w-4 h-4 text-blue-500 shrink-0" />
+                                  <span className="text-[10.5px] font-bold tracking-tight">{card.name}</span>
+                                </div>
+                                <span className="text-[8.5px] text-slate-500 block mt-0.5 font-mono">{card.desc}</span>
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg flex flex-col justify-center">
-                          <span className="text-[9px] text-slate-400 font-mono block mb-1.5 uppercase font-bold text-center">Trust Node Internal Blueprint Diagram</span>
-                          <img 
-                            src="/trust_node_arch.png" 
-                            alt="Trust Node Technical Architecture" 
-                            className="w-full rounded border border-slate-800 bg-slate-950 max-h-56 object-contain"
-                          />
+
+                        {/* Code Spec Viewer */}
+                        <div className="lg:col-span-8 flex flex-col bg-slate-900 border border-slate-850 rounded-xl overflow-hidden p-4 space-y-3">
+                          {activeTechCard === "kafka" && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span className="text-xs font-bold text-slate-200">Flink SQL / Kafka Ingress Schema</span>
+                                <span className="text-[9px] font-mono text-slate-500">v1.12.0 • Ingress Layer</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-sans">
+                                Event-driven ingestion pipeline consumes telemetry events from localized Kafka topics, validating fields and declaring watermarks for stateful processing.
+                              </p>
+                              <pre className="bg-slate-950 border border-slate-800 p-2.5 rounded-lg text-[9.5px] font-mono text-blue-300 overflow-x-auto max-h-56 leading-normal">
+{`CREATE TEMPORARY TABLE raw_telemetry_ingress (
+  msisdn STRING,
+  imsi STRING,
+  event_type STRING,
+  ts TIMESTAMP(3),
+  cell_tower_id STRING,
+  imei STRING,
+  WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
+) WITH (
+  'connector' = 'kafka',
+  'topic' = 'rogers.telemetry.events',
+  'format' = 'json'
+);
+
+-- Compute SIM swaps in a rolling 2-hour window
+CREATE VIEW stateful_sim_swaps AS
+SELECT 
+  msisdn,
+  COUNT(imsi) OVER (
+    PARTITION BY msisdn 
+    ORDER BY ts 
+    RANGE BETWEEN INTERVAL '2' HOUR PRECEDING AND CURRENT ROW
+  ) as sim_swap_count_2h
+FROM raw_telemetry_ingress
+WHERE event_type = 'SIM_SWAP_REQUEST';`}
+                              </pre>
+                            </div>
+                          )}
+
+                          {activeTechCard === "rocksdb" && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span className="text-xs font-bold text-slate-200">Java RocksDB Stateful Store API</span>
+                                <span className="text-[9px] font-mono text-slate-500">v8.1.1 • Local Feature State</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-sans">
+                                Low-latency key-value state store handles millions of sliding transactions per second, recording aggregates locally prior to anonymization filters.
+                              </p>
+                              <pre className="bg-slate-950 border border-slate-800 p-2.5 rounded-lg text-[9.5px] font-mono text-purple-300 overflow-x-auto max-h-56 leading-normal">
+{`// Configure RocksDB State Store for low-latency aggregates
+Options options = new Options().setCreateIfMissing(true);
+RocksDB db = RocksDB.open(options, "/var/data/rocksdb/features");
+
+byte[] key = msisdn.getBytes(StandardCharsets.UTF_8);
+byte[] value = db.get(key);
+
+FeatureState state;
+if (value == null) {
+    state = new FeatureState(msisdn, 0, 0, System.currentTimeMillis());
+} else {
+    state = FeatureState.deserialize(value);
+}
+
+// Increment SIM swaps if active event detected
+if ("SIM_SWAP_REQUEST".equals(event.getType())) {
+    state.incrementSimSwapCount2h();
+}
+
+db.put(key, state.serialize());`}
+                              </pre>
+                            </div>
+                          )}
+
+                          {activeTechCard === "iceberg" && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span className="text-xs font-bold text-slate-200">Apache Iceberg DDL Schema</span>
+                                <span className="text-[9px] font-mono text-slate-500">v2 Format • Local Analytics Sync</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-sans">
+                                Conformed tables local snapshot sync. Synchronizes the local aggregates into distributed cloud storage partition layers, bypassing centralized transactional engines.
+                              </p>
+                              <pre className="bg-slate-950 border border-slate-800 p-2.5 rounded-lg text-[9.5px] font-mono text-amber-300 overflow-x-auto max-h-56 leading-normal">
+{`-- DDL for Iceberg Federated Feature Sync Table
+CREATE TABLE iceberg.db_trust.conformed_features (
+  hashed_msisdn STRING COMMENT 'SHA-256 subscriber ID',
+  sim_swap_count_2h INT COMMENT 'Count of SIM swaps requested in 2h',
+  device_switch_count_24h INT COMMENT 'Device changes in last 24h',
+  location_change_count_1h INT COMMENT 'Cell tower jumps in last 1h',
+  impossible_travel_flag BOOLEAN COMMENT 'Triggered by physical velocity',
+  data_privacy_consent BOOLEAN COMMENT 'Consent flag for scoring',
+  last_updated TIMESTAMP COMMENT 'UTC timestamp of calculation'
+) 
+USING iceberg
+PARTITIONED BY (days(last_updated));`}
+                              </pre>
+                            </div>
+                          )}
+
+                          {activeTechCard === "jwe" && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span className="text-xs font-bold text-slate-200">JOSE JWE RFC 7516 Encryption Schema</span>
+                                <span className="text-[9px] font-mono text-slate-500">RSA-OAEP + A128GCM • Privacy Shield Egress</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-sans">
+                                Encrypted JSON Web Encryption envelope wraps anonymized feature structures so payloads are safe in transit. Decrypted only inside Central Platform Secure Sandbox bounds.
+                              </p>
+                              <pre className="bg-slate-950 border border-slate-800 p-2.5 rounded-lg text-[9.5px] font-mono text-red-300 overflow-x-auto max-h-56 leading-normal">
+{`// Encrypted payload envelope schema (RFC 7516)
+{
+  "protected": "eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkExMjhHQ00iLCJraWQiOiJub2RlLXJvZ2Vycy0wMSJ9",
+  "encrypted_key": "a5B9...[Encrypted CEK]...dF3",
+  "iv": "v8k92bNd7a1_qA92",
+  "ciphertext": "9J2d_1ka98B...[Ciphertext encrypted features]...sF2",
+  "tag": "c928KdBv7ad81aKsd"
+}
+// Decrypted Payload structure:
+// { "sub": "sha256-hash", "iss": "Rogers-East-Node", "exp": 1782234000, "features": {...} }`}
+                              </pre>
+                            </div>
+                          )}
+
+                          {activeTechCard === "grpc" && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                                <span className="text-xs font-bold text-slate-200">gRPC Protobuf Signal Exchange Contract</span>
+                                <span className="text-[9px] font-mono text-slate-500">Proto3 Schema • Transport API</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-sans">
+                                Schema contract protocol defines data plane RPC interfaces, securing high-speed feature exchanges across nodes and the central trust platform.
+                              </p>
+                              <pre className="bg-slate-950 border border-slate-800 p-2.5 rounded-lg text-[9.5px] font-mono text-emerald-300 overflow-x-auto max-h-56 leading-normal">
+{`syntax = "proto3";
+
+package enstream.trust.v1;
+
+service TrustNodeExchangeService {
+  // Query trust features without exchanging raw PII
+  rpc QueryFeatures(FeatureRequest) returns (FeatureResponse);
+}
+
+message FeatureRequest {
+  string hashed_msisdn = 1;
+  string query_id = 2;
+  int64 timestamp_epoch_ms = 3;
+}
+
+message FeatureResponse {
+  string encrypted_jwe_envelope = 1; // Encrypted JWE envelope
+  string sender_node_id = 2;
+  int32 response_status_code = 3; // 200 OK, 403 Consent Denied
+  string signature = 4; // Cryptographic node signature
+}`}
+                              </pre>
+                            </div>
+                          )}
+
                         </div>
+
                       </div>
+
                     </div>
                   </div>
                 )}
 
-                {/* CENTRAL PLATFORM INTERACTION SUB-TAB */}
+                {/* SUBTAB 3: INTERACTION PROTOCOL CONSOLE */}
                 {nodeSubTab === "interaction" && (
                   <div className="space-y-4 animate-fadeIn">
                     <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 space-y-4">
-                      <h4 className="text-xs uppercase font-mono text-blue-400 font-black">Node & Central Intelligence Interaction Protocol</h4>
                       
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div className="space-y-3">
-                          <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-850 space-y-2">
-                            <h5 className="text-[11px] font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center">
-                              <Share2 className="w-3.5 h-3.5 mr-1 text-emerald-400" />
-                              <span>1. Data Plane: Real-Time Signal Exchange</span>
-                            </h5>
-                            <ul className="space-y-1 text-[9.5px] text-slate-400 leading-normal font-mono">
-                              <li>• Bank query triggers central platform scoring request.</li>
-                              <li>• Central gateway broadcasts requests to Rogers/Bell/Telus nodes.</li>
-                              <li>• Nodes perform secure lookups on local feature aggregates.</li>
-                              <li>• Payload encrypted in JWE containers via secure gRPC.</li>
-                              <li>• Central engine combines features and updates the serving cache.</li>
-                            </ul>
-                          </div>
-
-                          <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-850 space-y-2">
-                            <h5 className="text-[11px] font-bold text-slate-200 border-b border-slate-800 pb-1 flex items-center">
-                              <Settings className="w-3.5 h-3.5 mr-1 text-blue-400" />
-                              <span>2. Control Plane: Orchestration & Policy</span>
-                            </h5>
-                            <ul className="space-y-1 text-[9.5px] text-slate-400 leading-normal font-mono">
-                              <li>• Central platform aggregates node heartbeats and active latencies.</li>
-                              <li>• Pushes updated model weights (e.g. XGBoost) down to nodes.</li>
-                              <li>• Configures JSON schema validation contracts remotely.</li>
-                              <li>• Tracks real-time API query performance and cost.</li>
-                            </ul>
-                          </div>
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-850 text-[10px] select-none shrink-0">
+                          <button
+                            onClick={() => setInteractionPlane("data")}
+                            className={`px-3 py-1.5 rounded font-bold transition-all ${
+                              interactionPlane === "data" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-350"
+                            }`}
+                          >
+                            Data Plane (Signals)
+                          </button>
+                          <button
+                            onClick={() => setInteractionPlane("control")}
+                            className={`px-3 py-1.5 rounded font-bold transition-all ${
+                              interactionPlane === "control" ? "bg-slate-800 text-blue-400" : "text-slate-500 hover:text-slate-350"
+                            }`}
+                          >
+                            Control Plane (Orchestration)
+                          </button>
                         </div>
 
-                        <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-lg flex flex-col justify-center">
-                          <span className="text-[9px] text-slate-400 font-mono block mb-1.5 uppercase font-bold text-center">Central Interaction Topology Diagram</span>
-                          <img 
-                            src="/interaction_arch.png" 
-                            alt="Trust Node & Central Interaction Architecture" 
-                            className="w-full rounded border border-slate-800 bg-slate-950 max-h-56 object-contain"
-                          />
+                        {/* Action buttons */}
+                        <div className="flex space-x-1.5 select-none overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                          {interactionPlane === "data" ? (
+                            <>
+                              <button
+                                onClick={triggerScoringRequest}
+                                className="px-2.5 py-1.5 bg-blue-600/10 border border-blue-500/25 text-blue-400 hover:bg-blue-600 hover:text-slate-100 text-[10px] font-mono font-bold rounded cursor-pointer transition-all whitespace-nowrap"
+                              >
+                                Trigger Query
+                              </button>
+                              <button
+                                onClick={triggerConsentRevocation}
+                                className="px-2.5 py-1.5 bg-rose-600/10 border border-rose-500/25 text-rose-450 hover:bg-rose-600 hover:text-slate-100 text-[10px] font-mono font-bold rounded cursor-pointer transition-all whitespace-nowrap"
+                              >
+                                Sim Revocation
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={triggerModelWeightPush}
+                                className="px-2.5 py-1.5 bg-purple-600/10 border border-purple-500/25 text-purple-400 hover:bg-purple-600 hover:text-slate-100 text-[10px] font-mono font-bold rounded cursor-pointer transition-all whitespace-nowrap"
+                              >
+                                Push Model Update
+                              </button>
+                              <button
+                                onClick={triggerSchemaComplianceAudit}
+                                className="px-2.5 py-1.5 bg-emerald-600/10 border border-emerald-500/25 text-emerald-450 hover:bg-emerald-600 hover:text-slate-100 text-[10px] font-mono font-bold rounded cursor-pointer transition-all whitespace-nowrap"
+                              >
+                                Run Schema Audit
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => setInteractionConsoleLogs(["[SYSTEM] Console logs cleared. Waiting for commands..."])}
+                            className="px-2.5 py-1.5 bg-slate-900 border border-slate-800 text-slate-500 hover:text-slate-300 text-[10px] font-mono font-bold rounded cursor-pointer transition-all whitespace-nowrap font-bold"
+                          >
+                            Clear
+                          </button>
                         </div>
                       </div>
+
+                      {/* Monospace console logs screen */}
+                      <div className="flex flex-col bg-slate-900 border border-slate-850 rounded-xl p-4 overflow-hidden relative">
+                        <div className="absolute top-2 right-4 flex items-center space-x-1 font-mono text-[9px] text-slate-500">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span>Node Interface: ONLINE</span>
+                        </div>
+                        <div className="font-mono text-[10px] text-slate-400 space-y-1 h-56 overflow-y-auto pr-2 leading-relaxed">
+                          {interactionConsoleLogs.map((log, index) => {
+                            let logColor = "text-slate-350";
+                            if (log.includes("[SUCCESS]")) logColor = "text-emerald-400";
+                            else if (log.includes("[WARNING]")) logColor = "text-amber-500 font-bold";
+                            else if (log.includes("[ERROR]") || log.includes("Error:") || log.includes("denied") || log.includes("DENIED")) logColor = "text-rose-455";
+                            else if (log.includes("[GRPC]")) logColor = "text-blue-400";
+                            else if (log.includes("[CONTROL]")) logColor = "text-purple-400";
+                            else if (log.includes("[SHIELD]")) logColor = "text-cyan-400";
+                            else if (log.includes("[SYSTEM]")) logColor = "text-slate-500";
+                            
+                            return (
+                              <div key={index} className={`${logColor} select-text`}>
+                                {log}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      {/* Small architecture note */}
+                      <p className="text-[10px] text-slate-500 leading-normal font-sans">
+                        <strong>Protocol Detail:</strong> Interaction between the Node (Data Sovereignty Layer) and the Central Intelligence Platform is strictly separated. The Data Plane swaps encrypted gRPC signals client-side, while the Control Plane dictates ML weights parameters and schema validation rules asynchronously.
+                      </p>
+
                     </div>
                   </div>
                 )}

@@ -3,12 +3,12 @@ import React, { useState, useEffect } from "react";
 import { 
   Code, Database, Server, Cpu, HelpCircle, Layers, 
   CheckCircle, FileText, Settings, ShieldAlert, GitBranch, Play, PlayCircle, Loader, Terminal,
-  TrendingUp, BarChart2, Shield, AlertCircle, RefreshCw, Lock, Unlock, Clock, ArrowRight, Eye, EyeOff
+  TrendingUp, BarChart2, Shield, Share2, AlertCircle, RefreshCw, Lock, Unlock, Clock, ArrowRight, Eye, EyeOff
 } from "lucide-react";
 import FederatedTrustNetwork from "./FederatedTrustNetwork";
 
 export default function TechnicalArchitecture() {
-  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws" | "builder" | "framework" | "federation">("evolution");
+  const [activeSubTab, setActiveSubTab] = useState<"trace" | "sandbox" | "roadmap" | "evolution" | "brief" | "topology" | "code" | "schemas" | "aws" | "builder" | "framework" | "federation" | "blueprints">("evolution");
   const [selectedCodeSection, setSelectedCodeSection] = useState<string>("dq");
   
   // Trace console states
@@ -1132,6 +1132,14 @@ HAVING
             }`}
           >
             Federated Network Story
+          </button>
+          <button
+            onClick={() => setActiveSubTab("blueprints")}
+            className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
+              activeSubTab === "blueprints" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-500 hover:text-slate-350"
+            }`}
+          >
+            Architectural Blueprints
           </button>
         </div>
       </div>
@@ -3132,6 +3140,135 @@ HAVING
                 <div className="pl-4"># Table outputs bypass local disk and write directly to S3 parquet...</div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB 9.5: ARCHITECTURAL BLUEPRINTS */}
+      {activeSubTab === "blueprints" && (
+        <div className="space-y-6 animate-fadeIn text-slate-100 font-sans">
+          {/* Section Header */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-2">
+            <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center">
+              <Layers className="h-4.5 w-4.5 text-blue-500 mr-2" />
+              Detailed Functional &amp; Technical Architecture Blueprints
+            </h3>
+            <p className="text-xs text-slate-400 font-sans max-w-4xl">
+              Examine the inner workings of the Federated Trust Node architecture and its secure, privacy-preserving interactions with the Central Intelligence Platform. This view highlights the data sovereignty boundaries and cryptographic isolation mechanisms.
+            </p>
+          </div>
+
+          {/* Grid Layout for Side-by-Side Architectural Diagrams */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Trust Node Architecture Card */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+              <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+                <div>
+                  <h4 className="text-xs font-extrabold text-slate-200 uppercase tracking-wide">
+                    1. Federated Trust Node Architecture
+                  </h4>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    Isolated Ingestion Boundary &amp; Local Processing Plane
+                  </span>
+                </div>
+                <span className="bg-blue-900/40 text-blue-400 border border-blue-500/30 text-[9px] px-2 py-0.5 rounded font-mono font-bold uppercase">
+                  Data Plane
+                </span>
+              </div>
+
+              {/* Diagram container with hover effect */}
+              <div className="bg-slate-950 border border-slate-850 rounded-lg p-3 flex items-center justify-center min-h-[350px] overflow-hidden group">
+                <img 
+                  src="/trust_node_arch.png" 
+                  alt="Federated Trust Node Architecture" 
+                  className="max-w-full max-h-[380px] object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+              </div>
+
+              {/* Core technical callouts */}
+              <div className="space-y-3 bg-slate-950/60 p-4 rounded-lg border border-slate-850/60">
+                <h5 className="text-[10.5px] font-bold text-slate-300 uppercase tracking-wider flex items-center">
+                  <Shield className="w-3.5 h-3.5 mr-1.5 text-blue-500" />
+                  Key Isolation &amp; Processing Pillars
+                </h5>
+                <ul className="space-y-2 text-[10.5px] text-slate-400 font-sans leading-relaxed">
+                  <li className="flex items-start">
+                    <span className="text-blue-500 mr-2 font-bold">•</span>
+                    <span>
+                      <strong className="text-slate-300">Isolated Ingestion Boundary:</strong> Raw carrier telemetry (SIM changes, tower attachments) is ingested purely inside the carrier’s private boundary using Kafka Streams. Raw databases and event logs are never exposed externally.
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-500 mr-2 font-bold">•</span>
+                    <span>
+                      <strong className="text-slate-300">Local Stateful Aggregation:</strong> Features are computed locally in real-time and saved to a high-speed, embedded RocksDB state store. This allows rapid query times under 5ms without remote dependencies.
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-blue-500 mr-2 font-bold">•</span>
+                    <span>
+                      <strong className="text-slate-300">PII Shield &amp; Anonymization:</strong> Local identity data is transformed using salt-hashed keys (SHA-256) and feature scaling. Only fully anonymized score components are allowed beyond the node egress.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Interaction Architecture Card */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+              <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+                <div>
+                  <h4 className="text-xs font-extrabold text-slate-200 uppercase tracking-wide">
+                    2. Node &amp; Central Platform Interaction
+                  </h4>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    Privacy-Preserving Scoring &amp; Control Plane Exchange
+                  </span>
+                </div>
+                <span className="bg-purple-900/40 text-purple-400 border border-purple-500/30 text-[9px] px-2 py-0.5 rounded font-mono font-bold uppercase">
+                  Control Plane
+                </span>
+              </div>
+
+              {/* Diagram container with hover effect */}
+              <div className="bg-slate-950 border border-slate-850 rounded-lg p-3 flex items-center justify-center min-h-[350px] overflow-hidden group">
+                <img 
+                  src="/interaction_arch.png" 
+                  alt="Trust Node & Central Platform Interaction" 
+                  className="max-w-full max-h-[380px] object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+              </div>
+
+              {/* Core technical callouts */}
+              <div className="space-y-3 bg-slate-950/60 p-4 rounded-lg border border-slate-850/60">
+                <h5 className="text-[10.5px] font-bold text-slate-300 uppercase tracking-wider flex items-center">
+                  <Share2 className="w-3.5 h-3.5 mr-1.5 text-purple-450" />
+                  Interaction &amp; Cryptographic Flow
+                </h5>
+                <ul className="space-y-2 text-[10.5px] text-slate-400 font-sans leading-relaxed">
+                  <li className="flex items-start">
+                    <span className="text-purple-450 mr-2 font-bold">•</span>
+                    <span>
+                      <strong className="text-slate-300">Federated Scoring Orchestrator:</strong> The Central Platform acts as a query router, distributing concurrent validation checks to participating carrier trust nodes using highly optimized gRPC interfaces.
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-purple-450 mr-2 font-bold">•</span>
+                    <span>
+                      <strong className="text-slate-300">Double-Envelope Cryptography:</strong> Payload fields and scoring vectors are encrypted with JSON Web Encryption (JWE). Public-key infrastructures prevent central eavesdropping.
+                    </span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-purple-450 mr-2 font-bold">•</span>
+                    <span>
+                      <strong className="text-slate-300">Model Observability &amp; Feedback:</strong> Model registries push new champion weights and update telemetry schemas to local trust nodes via control signals, maintaining real-time drift compliance.
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@
 import { 
   Activity, Database, Cpu, 
   Smartphone, BarChart2, Search, AlertCircle, Code, GitMerge, Shuffle,
-  Menu, X
+  Menu, X, Package
 } from "lucide-react";
 
 // Components
@@ -16,12 +16,13 @@ import RealTimeMonitor from "./components/RealTimeMonitor";
 import TechnicalArchitecture from "./components/TechnicalArchitecture";
 import MedallionArchitectureConsole from "./components/MedallionArchitectureConsole";
 import DataExchangeConsole from "./components/DataExchangeConsole";
+import TrustNodeDeploymentConsole from "./components/TrustNodeDeploymentConsole";
 
 import { BACKEND_URL } from "./config";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<
-    "executive" | "operations" | "data" | "medallion_architecture" | "dq" | "ml" | "investigation" | "realtime" | "architecture" | "data_exchange"
+    "executive" | "operations" | "data" | "medallion_architecture" | "dq" | "ml" | "investigation" | "realtime" | "architecture" | "data_exchange" | "trust_node_deploy"
   >("executive");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -315,6 +316,14 @@ export default function App() {
             >
               <Code className="w-4 h-4" /> <span>Technical Working</span>
             </button>
+            <button 
+              onClick={() => { setActiveTab("trust_node_deploy"); setSidebarOpen(false); }}
+              className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-xs font-bold uppercase transition-all ${
+                activeTab === "trust_node_deploy" ? "bg-slate-850 text-blue-400 border border-slate-700/65" : "text-slate-400 hover:bg-slate-850 hover:text-slate-200"
+              }`}
+            >
+              <Package className="w-4 h-4" /> <span>Trust Node Deployer</span>
+            </button>
           </nav>
         </div>
 
@@ -358,6 +367,7 @@ export default function App() {
               {activeTab === "ml" && "ML Platform Console: Model Registry & Drift Metrics"}
               {activeTab === "investigation" && "Fraud Investigation Console: Entity Lookup"}
               {activeTab === "realtime" && "Real-Time Event Ingress: Manual Event Bus Sim"}
+              {activeTab === "trust_node_deploy" && "Federated Infrastructure: Trust Node Packager & Deployer"}
             </h2>
           </div>
           
@@ -429,6 +439,9 @@ export default function App() {
           )}
           {activeTab === "architecture" && (
             <TechnicalArchitecture />
+          )}
+          {activeTab === "trust_node_deploy" && (
+            <TrustNodeDeploymentConsole />
           )}
         </div>
       </main>

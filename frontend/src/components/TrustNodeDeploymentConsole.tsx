@@ -856,13 +856,13 @@ ${blockedPolicies || "      # No fields configured"}
               
               <div className="space-y-2 select-none">
                 {[
-                  { id: 1, name: "1. Connectivity Layer", desc: "Oracle, Kafka Streams, CDC connectors. Pulls raw event payload.", color: "border-blue-500/20 text-blue-400 bg-blue-500/5", glow: "border-blue-500 bg-blue-500/10 shadow-blue-500/10" },
-                  { id: 2, name: "2. Data Certification Layer", desc: "Runs schema validation, data quality checks, and registers lineage details.", color: "border-cyan-500/20 text-cyan-400 bg-cyan-500/5", glow: "border-cyan-500 bg-cyan-500/10 shadow-cyan-500/10" },
-                  { id: 3, name: "3. Trust Feature Engine", desc: "Calculates real-time aggregation metrics (sim swaps, location velocity).", color: "border-indigo-500/20 text-indigo-400 bg-indigo-500/5", glow: "border-indigo-500 bg-indigo-500/10 shadow-indigo-500/10" },
-                  { id: 4, name: "4. Feature Store (RocksDB / Redis)", desc: "Stores online state in Redis cache and offline history in Iceberg tables.", color: "border-purple-500/20 text-purple-400 bg-purple-500/5", glow: "border-purple-500 bg-purple-500/10 shadow-purple-500/10" },
-                  { id: 5, name: "5. Privacy & Governance Layer", desc: "PII masking, identity hashing (SHA-256), and data sharing contract verification.", color: "border-rose-500/20 text-rose-455 bg-rose-500/5", glow: "border-rose-500 bg-rose-500/10 shadow-rose-500/10" },
-                  { id: 6, name: "6. Federation Gateway Proxy", desc: "Signatures validation. Encrypts score payload in a secure JWE envelope.", color: "border-emerald-500/20 text-emerald-450 bg-emerald-500/5", glow: "border-emerald-500 bg-emerald-500/10 shadow-emerald-500/10" },
-                  { id: 7, name: "7. Observability Layer", desc: "Prometheus exporter. Tracks CPU, memory, and transactional scoring latency.", color: "border-amber-500/20 text-amber-400 bg-amber-500/5", glow: "border-amber-500 bg-amber-500/10 shadow-amber-500/10" },
+                  { id: 1, name: "1. Connectivity Layer", desc: "Oracle, Kafka Streams, and Debezium CDC connectors. Pulls raw event payload.", color: "border-blue-500/20 text-blue-400 bg-blue-500/5", glow: "border-blue-500 bg-blue-500/10 shadow-blue-500/10" },
+                  { id: 2, name: "2. Data Certification Layer", desc: "Validates telemetry schemas and registers lineage in OpenMetadata.", color: "border-cyan-500/20 text-cyan-400 bg-cyan-500/5", glow: "border-cyan-500 bg-cyan-500/10 shadow-cyan-500/10" },
+                  { id: 3, name: "3. Trust Feature Engine", desc: "Calculates real-time aggregates (sim swaps, location velocity).", color: "border-indigo-500/20 text-indigo-400 bg-indigo-500/5", glow: "border-indigo-500 bg-indigo-500/10 shadow-indigo-500/10" },
+                  { id: 4, name: "4. Feature Store (RocksDB / Redis)", desc: "Feast store serving online state from Redis and offline history from Iceberg.", color: "border-purple-500/20 text-purple-400 bg-purple-500/5", glow: "border-purple-500 bg-purple-500/10 shadow-purple-500/10" },
+                  { id: 5, name: "5. Privacy & Governance Layer", desc: "PII masking (SHA-256) and Open Policy Agent (OPA) contract enforcement.", color: "border-rose-500/20 text-rose-455 bg-rose-500/5", glow: "border-rose-500 bg-rose-500/10 shadow-rose-500/10" },
+                  { id: 6, name: "6. Federation Gateway Proxy", desc: "Validates secure tokens and packages scores in JWE envelopes.", color: "border-emerald-500/20 text-emerald-450 bg-emerald-500/5", glow: "border-emerald-500 bg-emerald-500/10 shadow-emerald-500/10" },
+                  { id: 7, name: "7. Observability Layer", desc: "Exposes metrics to Prometheus and feeds feature drift metrics to MLflow.", color: "border-amber-500/20 text-amber-400 bg-amber-500/5", glow: "border-amber-500 bg-amber-500/10 shadow-amber-500/10" },
                 ].map(layer => {
                   const isActive = activeLayer === layer.id;
                   const isInspected = inspectedLayer === layer.id;
@@ -954,19 +954,21 @@ ${blockedPolicies || "      # No fields configured"}
                     title: "Connectivity Layer",
                     metrics: [
                       { label: "Active Connectors", val: `${selectedSources.length} Connected` },
+                      { label: "CDC Engine", val: "Debezium Connect" },
                       { label: "Ingress Queue Load", val: "2,450 events/sec" },
                       { label: "Latency", val: "1.2ms" }
                     ],
-                    details: "Listens directly to raw participant systems. Kafka Consumer threads are currently healthy. Auto-reconnect enabled for SFTP."
+                    details: "Consumes telemetry from Kafka. Debezium CDC captures transaction logs from local subscriber databases (Oracle, PostgreSQL)."
                   },
                   2: {
                     title: "Data Certification Layer",
                     metrics: [
+                      { label: "Schema Registry", val: "OpenMetadata" },
                       { label: "Schema Compliance", val: "100% Compliant" },
                       { label: "Quarantine Ratio", val: "0.02% (2 Bad Events)" },
                       { label: "Check Execution", val: "0.4ms" }
                     ],
-                    details: "Applies schema telemetry check assertions. Verifies E.164 formats, string lengths, and ensures SLA latency requirements are satisfied."
+                    details: "Enforces telemetry schema rules, checks lineage, and publishes node metadata to OpenMetadata catalog."
                   },
                   3: {
                     title: "Trust Feature Engine",
@@ -980,20 +982,22 @@ ${blockedPolicies || "      # No fields configured"}
                   4: {
                     title: "Feature Store",
                     metrics: [
-                      { label: "Online Cache Hits", val: "99.8% (Redis)" },
-                      { label: "Offline Storage", val: "Apache Iceberg" },
-                      { label: "Offline Table Sync", val: "Every 5 Mins" }
+                      { label: "Orchestrator", val: "Feast Store Engine" },
+                      { label: "Feast Online Store", val: "Redis Cache" },
+                      { label: "Feast Offline Store", val: "Apache Iceberg" },
+                      { label: "Offline Sync", val: "Every 5 Mins" }
                     ],
-                    details: "Dual-layer storage model. Reads query requests from memory (Redis) and writes conformed transactions to Iceberg files."
+                    details: "Managed by Feast. Reads low-latency feature values from Redis (Feast Online) and archives training logs in Iceberg tables."
                   },
                   5: {
                     title: "Privacy & Governance",
                     metrics: [
+                      { label: "Governance Engine", val: "Open Policy Agent" },
+                      { label: "OPA Rule Engine", val: "Rego Strict" },
                       { label: "PII Masking", val: "Enabled (SHA-256)" },
-                      { label: "Contract Policy", val: "v1.0 Strict" },
                       { label: "Consent Verification", val: "Required" }
                     ],
-                    details: "Filters raw subscriber identity records. Hashing triggers instantly at node boundaries. Unallowed data fields are blocked and masked."
+                    details: "Applies governance rules via Open Policy Agent (OPA). Rego policies verify user consent and mask raw subscriber identifiers."
                   },
                   6: {
                     title: "Federation Gateway",
@@ -1007,11 +1011,12 @@ ${blockedPolicies || "      # No fields configured"}
                   7: {
                     title: "Observability Layer",
                     metrics: [
+                      { label: "Drift Tracking", val: "MLflow Registry" },
                       { label: "Processor Latency", val: "11ms" },
                       { label: "Node CPU Load", val: "12%" },
                       { label: "Handshake Heartbeat", val: "GREEN / ACTIVE" }
                     ],
-                    details: "Tracks performance metrics. Exposes Prometheus telemetry targets to report data quality indicators, feature drift, and latency."
+                    details: "Exposes telemetry statistics to Prometheus and publishes feature drift and ML observability profiles to MLflow."
                   }
                 };
                 
